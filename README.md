@@ -7,8 +7,20 @@ uBuilder will be reworked (hacked, modded,changed...?) to fit the needs of <a hr
 
 <a href="http://cybernux.org" target="_blank" title="The Cybernux Linux® Project">The Cybernux Linux® Project</a> is not going to be following gNewSense philosophy in anyway, if you want an absolutely "free" system - go there. WE are going to be removing a lot of stuff though. To start off with, we will be removing:
 
-1) Ubuntu stuff that interferes with other stuff - slowing things down.
-2) Unity will be compleely removed.
-3) Packages that need to be fixed, changed for our purpose.
+  * 1) Ubuntu stuff that interferes with other stuff - slowing things down.
+  * 2) Unity will be compleely removed.
+  * 3) Packages that need to be fixed, changed for our purpose.
+
+
+How this works
+==============
+This is to large to add here. There will be a WIKI HowToUse soon.
+
+
+License
+=======
+The Cybernux Linux® Project is released under the GPLv3 - see LICENSE.
+
+The original "builder" scripts were released under GPLv2 - see COPYING.
 
 
