@@ -1,11 +1,13 @@
-ubuilder
+uBuilder
 ========
 
-uBuilder is a tool to create a a Linux distribution using Ubuntu as a base. uBuilder's base was originally created by Brian Brazil (bbrazil) for the gNewSense project</a>. They called the script "builder", which has been discontinued and removed from thier servers.
+uBuilder is a tool designed to create a Linux Distribution using Ubuntu as it's base. uBuilder's base was originally created by Brian Brazil (bbrazil) for the gNewSense project</a>. They called the script "builder", which has been discontinued and removed from thier servers.
 
-uBuilder will be reworked (hacked, modded,changed...?) to fit the needs of the Cybernux Linux® Project.
+uBuilder will be (is being) reworked (hacked, modded,changed...?) to fit the needs of the Cybernux Linux® Project.
 
-The Cybernux Linux® Project is not going to be following gNewSense philosophy in anyway, if you want an absolutely "free" system - go there. WE are going to be removing a lot of stuff though. To start off with, we will be removing:
+The Cybernux Linux® Project is not going to be following gNewSense philosophy of removing "non free stuff" in anyway. WE are going to be removing a lot of "overload" stuff though. With "overload" we mean things that sort of blog things down, making the OS very heavy and slow.
+
+To start off with, we will be removing:
 
   * _Ubuntu Specific_ stuff that interferes with other stuff - slowing things down.
   * _Unity_ will be compleely removed.
