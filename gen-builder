@@ -31,7 +31,10 @@ cd ubuilder
 
 git clone https://github.com/Cybernux/ubuilder.git ubuilder
 #VERSION=$(git revo ubuilder)
-VERSION=0.0.1
+
+# NOTE: Attemting the format MONTH.DAY-HOURMINUTES (24hr system)
+VERSION=$(date +%y.%j-%H%M)
+#VERSION=0.0.1
 find ubuilder -name .git -print0 | xargs -0 rm -rf
 EDITOR=true dch --create --package ubuilder -v $VERSION-$BUILDER_VERSION "Automatically generated"
 sed -i "/XXXXXX/d;s/UNRELEASED/$RELEASE/" debian/changelog
