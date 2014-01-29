@@ -28,21 +28,21 @@ apt-get source apt
 apt-get --yes build-dep apt
 cd apt-*
 
-rm doc/examples/sources.list
-cat << EOF >> doc/examples/sources.list
+rm doc/examples/sources.list.in
+cat << EOF >> doc/examples/sources.list.in
 # See sources.list(5) for more information, especialy
 # Remember that you can only use http, ftp or file URIs
 # CDROMs are managed through the apt-cdrom tool.
-deb http://us.archive.gnewsense.org/gnewsense deltah main universe
-deb-src http://us.archive.gnewsense.org/gnewsense deltah main universe
+deb http://repo.$DOMAIN/$DISTRONAME_L $BASE_RELEASE $COMPONENTS
+deb-src http://repo.$DOMAIN/$DISTRONAME_L $BASE_RELEASE $COMPONENTS
 
-deb http://security.gnewsense.org/gnewsense deltah-security main universe
-deb-src http://security.gnewsense.org/gnewsense deltah-security main universe
+deb http://security.$DOMAIN/$DISTRONAME_L ${BASE_RELEASE}-security $COMPONENTS
+deb-src http://security.$DOMAIN/$DISTRONAME_L ${BASE_RELEASE}-security $COMPONENTS
 
-deb http://us.archive.gnewsense.org/gnewsense deltah-updates main universe
-deb-src http://us.archive.gnewsense.org/gnewsense deltah-updates main universe
+deb http://repo.$DOMAIN/$DISTRONAME_L ${BASE_RELEASE}-updates $COMPONENTS
+deb-src http://repo.$DOMAIN/$DISTRONAME_L ${BASE_RELEASE}-updates $COMPONENTS
 EOF
 
-echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${APT_VERSION}'#p' debian/changelog) "Changed for $DISTRONAME"
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${APT_VERSION}'#p' debian/changelog) "Changed for $DIST_FULL_NAME"
 
 dpkg-buildpackage $DPKGOPTS
