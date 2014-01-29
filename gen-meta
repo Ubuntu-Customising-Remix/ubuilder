@@ -1,0 +1,52 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Brian Brazil
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source ubuntu-meta$VERSION
+apt-get --yes build-dep ubuntu-meta$VERSION
+cd ubuntu-meta-*
+
+for i in minimal standard desktop live; do
+	n=META_${i}_REMOVE
+	for p in ${!n}; do
+		sed -i "/^$p$/d" ${i}-$GNS_HOST_ARCH
+		sed -i "/^$p$/d" ${i}-recommends-$GNS_HOST_ARCH
+	done;
+	n=META_${i}_ADD
+	for p in ${!n}; do
+		echo "$p" >> ${i}-$GNS_HOST_ARCH
+	done;
+done
+
+sed -i "s/package=ubuntu/package=$DISTRONAME_L/;
+	/^binary-indep:/,/^$/s/.* -i.*//" debian/rules
+sed -i "/Package: ubuntu-base/,/^$/d;
+	s/ubuntu-/${DISTRONAME_L}-/; 
+	s/Package: ${DISTRONAME_L}\(-.*\)/Package: ${DISTRONAME_L}\1\nProvides: ubuntu\1/;
+	s/Ubuntu/$DISTRONAME/g" debian/control
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${META_VERSION}'#p' debian/changelog)  "Altered for $RELEASE"
+sed -i "1s/^ubuntu-meta/${DISTRONAME_L}-meta/" debian/changelog
+
+dpkg-buildpackage $DPKGOPTS

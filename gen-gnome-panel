@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+#    Copyright (C) 2008 Brian Brazil
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source gnome-panel$VERSION
+apt-get --yes build-dep gnome-panel$VERSION
+cd gnome-panel-*
+
+sed -i "s/firefox/epiphany/" debian/patches/04_default_panel_config.patch
+
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${GNOME_PANEL_VERSION}'#p' debian/changelog)  "Replaced firefox with epiphany"
+
+dpkg-buildpackage $DPKGOPTS

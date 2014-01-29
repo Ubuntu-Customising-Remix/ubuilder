@@ -1,0 +1,187 @@
+#/bin/bash
+# ----------------------------------------
+# This has been modded to fit our project.
+# (c) 2014 The Cybernux Linux® Project
+# ---------------------------------------
+
+
+
+# This is the config for gNewSense, alter as appropriate for your own distro
+# NOTE: The suggested way of changing this file is copy it to config.local and
+# edit that instead.
+
+if [ $UID != 0 ]; then
+	echo 'This script must be run as root'
+	exit 1
+fi
+
+# If you want less debugging information to be printed out while doing a
+# Builder run, change this line to 'set +ex'
+set -ex
+
+# For kde download before anything libbogl-dev # Chris Fernandez
+
+## UPSTREAM
+# Path to your Ubuntu dists tree. Note that the name is historical -
+# previously this *WAS* a local ubuntu mirror. With changes to builder,
+# this is now just the dists/ directory of the mirror (~40mb).
+MIRRORLOCAL=/opt/ubuntu-mirror/ubuntu/
+# Where to get updated upstream packages from. Currently only supports http
+# This should be configured to point at a local mirror (on your
+# network), or a local proxy (eg apt-cacher-ng). If using a proxy, you
+# should ensure that is configured to get its packages from a nearby mirror.
+MIRROR=http://127.0.0.1/ubuntu/
+# Name of our upstreams release
+MIRRORDIST=saucy
+
+## DISTRO SPECIFIC CONFIGURATION
+# May break if you use anything other than letters and numbers
+# If you change $DISTRONAME you may need to modify META_desktop_ADD or create
+# your own artwork packages.
+DISTRONAME=Cybernux
+DISTRONAME_L=`echo $DISTRONAME | tr 'A-Z' 'a-z'`
+DIST_VENDOR="The Cybernux Linux® Project"
+DIST_FULL_NAME="Cybernux Linux®"
+
+# What is the codename for our release?
+BASE_RELEASE=othala
+[ -z $RELEASE ] && RELEASE=$BASE_RELEASE
+
+TAGLINE=""
+
+# This is the 8 character key ID, not the full fingerprint
+SIGNINGKEY=1253A1FA
+
+# Name and email address for changes. Syntax is important.
+export MAINTINFO='Cybernux DevTeam <dev-team@cybernux.org>'
+
+# Do you want to enable backports and updates?
+UPDATES=1
+BACKPORTS=1
+
+# Which architectures will we have in our repository (list all of them)
+ALL_REPO_ARCHES="i386 amd64"
+
+## MID STREAM
+# Where things go on the filesystem
+BASEDIR=/srv/$DISTRONAME_L
+
+# Where the buildscripts and livecd pull sources from
+REPOAPT=http://127.0.0.1/$DISTRONAME_L
+
+## LIVE CD
+LIVECD_VERSION=2.0
+
+## ARCHIVE AND MEDIA
+# Primary mirror should be archive.$DOMAIN, secondaries are CC.archive.$DOMAIN
+# Security host will be security.$DOMAIN and CC.security.$DOMAIN
+# Launchpad queries are redirected to lp.$DOMAIN
+# Bittorrent will use http://torrent.$DOMAIN:6969/announce
+DOMAIN=cybernux.org
+
+# Optional bittorrent announce list (btmakemetafile.bittornado --help)
+BITTORRENT_ANNOUNCE_LIST=''
+
+# Where to push the repo and livecds
+RSYNC_DEST=sandbox@repo.$DOMAIN:/srv/$DISTRONAME_L-$BASE_RELEASE/
+# Extra options for rsyncing up cds, -va is assumed
+RSYNC_OPTIONS="--partial"
+
+## ARTWORK
+LOGO_LETTER=c
+LOGO_COLOUR=blue	# Don't choose black or yellow
+
+# Changes to be made to the ubuntu-minimal etc. and packages
+META_minimal_ADD="mc openssh-server build-essential"
+META_standard_ADD="emacs nethack bsdgames"
+META_desktop_ADD="epiphany-browser openoffice.org-fix discover read-edid"
+META_desktop_ADD="${META_desktop_ADD} gthumb gnote aspell-en"
+META_minimal_REMOVE=""
+META_standard_REMOVE="popularity-contest friendly-recovery"
+META_desktop_REMOVE="ubuntu-docs ubuntu-artwork apport-gtk hwtest-gtk usplash-theme-ubuntu ubuntu-gdm-themes"
+META_desktop_REMOVE="${META_desktop_REMOVE} firefox ubufox firefox-gnome-support jockey-gtk app-install-data-commercial"
+META_desktop_REMOVE="${META_desktop_REMOVE} tomboy f-spot ubuntu-sounds"
+
+# Packages to install on the live cd not pulled in by META_* changes
+LIVECD_EXTRAS="ubiquity xresprobe binutils-static gvfs-fuse gparted jfsutils ntfsprogs xfsprogs nano wget mc openssh-server vim"
+
+FIREFOX_NAME=HotDog
+
+# Extra packages to add to the source cd
+CDSOURCE_ADD="ubuilder"
+
+# Extra packages to install in the chroot
+CHROOT_EXTRA_PACKAGES="cdbs python-dev python-distutils-extra python-central ccache"
+
+# Set it to 1 if you want to use ccache in the chrooted environment.
+# ccache is turned off by default because it is useful only for development
+# and may increase first compilation time.
+USECCACHE=0
+
+# Version numbers to be appended to generated .debs 
+# Mostly used during development (Increment these versions when making a change to the package)
+APT_VERSION=1
+UBIQUITY_VERSION=1
+BASE_FILES_VERSION=1
+UPDATE_MANAGER_VERSION=1
+ARTWORK_VERSION=1
+META_VERSION=1
+KERNEL_VERSION=1
+LAUNCHPAD_INTEGRATION_VERSION=1
+BUILDER_VERSION=1
+EXAMPLE_CONTENT_VERSION=1
+KDEFAULT_SETTINGS_VERSION=1
+KMETA_VERSION=1
+FIREFOX_VERSION=1
+GNOME_DESKTOP_VERSION=1
+YELP_VERSION=1
+HUMAN_ICON_THEME_VERSION=1
+GNOME_PANEL_VERSION=1
+EPIPHANY_BROWSER_VERSION=1
+PYTHON_APT_VERSION=1
+LINUX_UBUNTU_MODULES_VERSION=1
+APP_INSTALL_DATA_UBUNTU_VERSION=1
+MODULE_INIT_TOOLS_VERSION=1
+THUNDERBIRD_VERSION=1
+TEXLIVE_EXTRA_VERSION=1
+TEXLIVE_BIN_VERSION=1
+TEXLIVE_BASE_VERSION=1
+VLC_VERSION=1
+CIA_SCRIPTS_VERSION=1
+LIBGSM_VERSION=1
+XCHAT_VERSION=1
+TANGERINE_ICON_THEME_VERSION=1
+GNOME_ICON_THEME_VERSION=1
+HUMAN_THEME_VERSION=1
+PSUTILS_VERSION=1
+SEAMONKEY_VERSION=1
+AUDACITY_VERSION=1
+LIFEREA_VERSION=1
+KDEBASE_VERSION=1
+BOGOFILTER_VERSION=1
+BLENDER_VERSION=1
+MESA_VERSION=3
+KDELIBS_VERSION=1
+KDE4LIBS_VERSION=1
+
+# PATHS
+WORKINGDIR=$BASEDIR/tmp
+
+# Where to put stuff for creating the livecd, and creating packages
+LIVECDDIR=$BASEDIR/livecd
+REPODST=$BASEDIR/$DISTRONAME_L
+
+# Overrides.
+OVERRIDEFILE=$REPODST/conf/override.$RELEASE
+
+# Space separated list of repo components. Put the default first.
+COMPONENTS="main universe multiverse restricted"
+
+# Allow for local customisations
+if [ -r config.local ]; then . config.local; fi
+
+if [ -r config.auto ]; then . config.auto; else exit 1; fi
+
+# Without this, the diff cleaning for gen-linux will break. Probably affects other stuff too.
+LANG=C
+

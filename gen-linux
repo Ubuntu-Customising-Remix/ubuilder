@@ -1,0 +1,92 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006 - 2009  Brian Brazil
+#    Copyright (C) 2009  Karl Goetz
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+DEBLOB=$PWD/firmware/deblob-2.6.24.4.1
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source linux$VERSION
+apt-get --yes build-dep linux$VERSION
+
+function clean_kconfig {
+	#$1 = filename $2 = things to remove
+	perl -i -ne 'BEGIN{$p=1} if(/^config ('$2')$/){$p=0}elsif(/^(config|endmenu|source|endif)/){$p=1}; print if $p' $1
+}
+
+# Remove non-free bits
+cd linux-*/
+rm -rf debian/firmware/*
+bash -x $DEBLOB
+# deblob leaves tg3 broken - remove it
+rm ./drivers/net/tg3.c
+clean_kconfig ./drivers/net/Kconfig 'TIGON3'
+sed -i '/tg3\.o/d' ./drivers/net/Makefile
+# Also broken by VIDEOBUF_DVB removal
+sed -i '/CONFIG_VIDEO_CX23885/d' ./drivers/media/video/Makefile
+
+# Stop b43 module recommending non-free software
+# Help from #sed. See sed FAQ and Sams emails to gns-dev 20090814 20090815
+sed -i ':more;$!N;s/\n/&/2;tenough;$!bmore;:enough;s|b43err(wl, "You must go to "\n.*"http://linuxwireless.org/en/users/Drivers/b43#devicefirmware "\n.*"and download the correct firmware (version 4).\\n");|b43err(wl, "See http://wiki.gnewsense.org/Documentation/Wireless for instructions on installing free firmware for this device.\\n"); |;P;D' ./drivers/net/wireless/b43/main.c
+
+# Remove non-free ATI code and disable the modules
+rm include/video/mach64.h drivers/video/aty/mach64_* drivers/video/aty/atyfb_base.c
+clean_kconfig ./drivers/video/Kconfig 'FB_ATY'
+clean_kconfig ./drivers/video/Kconfig 'FB_ATY_GX'
+clean_kconfig ./drivers/video/Kconfig 'FB_ATY_CT'
+clean_kconfig ./drivers/video/Kconfig 'FB_ATY_LCD'
+clean_kconfig ./drivers/video/Kconfig 'FB_ATY_GENERIC_LCD'
+clean_kconfig ./drivers/video/Kconfig 'FB_ATY_BACKLIGHT'
+sed -i '/(CONFIG_FB_ATY)/d' ./drivers/video/Makefile
+
+# More asm-cris issues... Wonder if we'll finish off with any asm-cris at all :|
+rm -rf include/asm-cris/arch-v32/hwregs/iop/
+rm -rf include/asm-cris/arch-v32/hwregs/asm/
+rm -rf include/asm-cris/arch-v32/hwregs/{config_defs,extmem_defs,irq_nmi_defs,strcop_defs,reg_map}.h
+rm -rf include/asm-cris/arch-v32/hwregs/{ata_defs,cpu_vect,gio_defs,marb_bp_defs,rt_trace_defs,strmux_defs}.h
+rm -rf include/asm-cris/arch-v32/hwregs/{bif_core_defs,intr_vect,marb_defs,ser_defs,bif_slave_defs,eth_defs}.h
+rm -rf include/asm-cris/arch-v32/hwregs/{bif_dma_defs,dma_defs,intr_vect_defs,pinmux_defs,sser_defs,timer_defs}.h
+
+# More asm files. scary stuff.
+rm -f include/asm-arm/arch-integrator/bits.h
+rm -f include/asm-arm/arch-integrator/platform.h
+rm -f include/asm-arm/sizes.h
+
+cd ..
+
+rename 's/linux/linux-nofirmware/' linux_*.orig.tar.gz
+
+cd linux-*/
+
+# Changes so it'll compile without firmware
+# Need to go to previous revision for ABI stuff - long way of saying second last word
+sed -i 's/^prev_revision :=.*$/prev_revision := $(word $(words $(wordlist 2,$(words $(prev_revisions)),$(prev_revisions))),$(prev_revisions))/' debian/rules.d/0-common-vars.mk
+echo 'skipmodule = true' >> debian/rules.d/0-common-vars.mk # Having less modules is okay for us
+sed -i '/\^-\[\^-\]/,/^fi/d' debian/scripts/abi-check	# Having less symbols is okay for us
+
+# Xen hunk mismatches cause patches to *.orig not to apply
+sed -i 's/\(patch -p1\)/\1 --no-backup-if-mismatch/' debian/rules.d/6-binary-custom.mk
+
+echo | dch -D $RELEASE -v $(sed -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${KERNEL_VERSION}'#p' debian/changelog)  'Removed firmware'
+
+dpkg-buildpackage $DPKGOPTS

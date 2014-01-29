@@ -1,0 +1,53 @@
+[DesktopIcons]
+Animated=true
+Size=48
+
+[General]
+font=DejaVu Sans,9,-1,5,50,0,0,0,0,0
+fixed=DejaVu Sans Mono,9,-1,5,50,0,0,0,0,0
+menuFont=DejaVu Sans,9,-1,5,50,0,0,0,0,0
+taskbarFont=DejaVu Sans,9,-1,5,50,0,0,0,0,0
+toolBarFont=DejaVu Sans,9,-1,5,50,0,0,0,0,0
+widgetStyle=lipstik
+selectBackground=179,238,58
+selectForeground=255,255,255
+buttonBackground=245,245,220
+
+[PreviewSettings]
+BoostSize=true
+MaximumSize=5242880
+
+[KDE]
+ShowIconsOnPushButtons=true
+ChangeCursor=true
+EffectAnimateCombo=true
+EffectFadeMenu=false
+EffectFadeTooltip=false
+EffectsEnabled=true
+OpaqueResize=true
+colorScheme=kgnewsenseColours.kcsrc
+cursorTheme=kgnewsense
+
+[WM]
+activeFont=DejaVu Sans,9,-1,5,75,0,0,0,0,0
+activeBackground=107,142,35
+activeBlend=154,205,50
+activeForeground=255,255,255
+activeTitleBtnBg=245,245,220
+frame=250,250,210
+handle=250,250,210
+inactiveBackground=205,205,180
+inactiveBlend=205,205,193
+inactiveForeground=139,139,122
+inactiveFrame=250,250,210
+inactiveHandle=250,250,210
+inactiveTitleBtnBg=238,238,209
+
+[Global Shortcuts]
+Popup Launch Menu=default(Alt+F1);Win
+
+[KSpell]
+#ASpell
+KSpell_Client=1
+#UTF-8
+KSpell_Encoding=11

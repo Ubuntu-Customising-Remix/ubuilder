@@ -1,0 +1,13 @@
+This set of scripts is to create your own GNU/Linux distribution based on Ubuntu,
+including a livecd and repositories. It removes the non-free elements of
+Ubuntu. These scripts are currently used to create the gNewSense distribution.
+
+The syslinux directory and much of gen-livecd was taken from the debian-live project, and subsequently modified. The ubiquity.png is from the ubiquity source package, with the Ubuntu logo removed via the GIMP.
+
+These scripts are released under the GPLv2 or later.
+
+Instructions on how to use it can be found at 
+http://www.gnewsense.org/Builder/HowToCreateYourOwnGNULinuxDistribution
+
+Brian Brazil 18/08/2006
+Karl Goetz 2009-12-18

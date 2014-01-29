@@ -1,0 +1,39 @@
+[deltah-updates/gnash]
+chain = false
+checkout = bzr branch bzr://bzr.gnewsense.org/packages-deltah-updates/gnash gnash
+
+[deltah/gnewsense-external]
+chain = false
+checkout = bzr branch bzr://bzr.gnewsense.org/packages-deltah/gnewsense-external gnewsense-external
+
+[deltah/gnewsense-gdm-themes]
+chain = false
+checkout = bzr branch bzr://bzr.gnewsense.org/packages-deltah/gnewsense-gdm-themes gnewsense-gdm-themes
+
+[deltah/gnewsense-theme]
+chain = false
+checkout = bzr branch bzr://bzr.gnewsense.org/packages-deltah/gnewsense-theme gnewsense-theme
+
+[deltah/gnewsense-wallpapers]
+chain = false
+checkout = bzr branch bzr://bzr.gnewsense.org/packages-deltah/gnewsense-wallpapers gnewsense-wallpapers
+
+[deltah/gnote]
+chain = false
+checkout = bzr branch bzr://bzr.gnewsense.org/packages-deltah/gnote gnote
+
+[deltah/openoffice.org]
+chain = false
+checkout = bzr branch bzr://bzr.gnewsense.org/packages-deltah/openoffice.org openoffice.org
+
+[deltah/openoffice.org-fix]
+chain = false
+checkout = bzr branch bzr://bzr.gnewsense.org/packages-deltah/openoffice.org-fix openoffice.org-fix
+
+[deltah/usplash-theme-gnewsense]
+chain = false
+checkout = bzr branch bzr://bzr.gnewsense.org/packages-deltah/usplash-theme-gnewsense usplash-theme-gnewsense
+
+[deltah-security/openoffice.org]
+chain = false
+checkout = bzr branch bzr://bzr.gnewsense.org/packages-deltah-security/openoffice.org openoffice.org

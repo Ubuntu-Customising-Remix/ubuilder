@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+#    Copyright (C) 2009  Karl Goetz
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source libgsm$VERSION
+apt-get --yes build-dep libgsm$VERSION
+cd libgsm-*
+
+if ! [ -f debian/README.licence ]; then
+	cat << EOF >> debian/README.licence
+The licence of libgsm was found to be unclear, and as such suspect when it
+came to freedom (ref: http://bugs.debian.org/397047 ). Since then, upstream
+clarified the licence, by adding the following text:
+
+Since the original terms of 15 years ago maybe do not make our
+intentions completely clear given today's refined usage of the legal
+terms, we append this additional permission:
+
+      Permission to use, copy, modify, and distribute this software
+      for any purpose with or without fee is hereby granted,
+      provided that this notice is not removed and that neither
+      the authors nor the Technische Universitaet Berlin are
+      deemed to have made any representations as to the suitability
+      of this software for any purpose nor are held responsible
+      for any defects of this software.  THERE IS ABSOLUTELY NO
+      WARRANTY FOR THIS SOFTWARE.
+
+Berkeley/Bremen, 05.04.2009
+Jutta Degener
+Carsten Bormann
+
+EOF
+
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${LIBGSM_VERSION}'#p' debian/changelog) "Changed for $DISTRONAME"
+
+dpkg-buildpackage $DPKGOPTS

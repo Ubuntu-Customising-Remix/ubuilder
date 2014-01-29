@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# This script removes some "issues" with kernel-wedge the hard way.
+
+for i in /usr/share/kernel-wedge/modules/*; do
+	[ -f $i ] || continue
+	sed -i 's/^\([^ ?][^ ?]*\)$/\1 ?/' $i	
+done

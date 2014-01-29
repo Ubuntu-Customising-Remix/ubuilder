@@ -1,0 +1,38 @@
+diff -Nur kdelibs-3.5.10//khtml/rendering/render_frames.cpp kdelibs-3.5.10.new//khtml/rendering/render_frames.cpp
+--- kdelibs-3.5.10//khtml/rendering/render_frames.cpp	2006-07-22 10:16:47.000000000 +0200
++++ kdelibs-3.5.10.new//khtml/rendering/render_frames.cpp	2012-12-27 15:32:50.714979322 +0100
+@@ -924,34 +924,6 @@
+     // prepare for the local eventloop in KMessageBox
+     ref();
+ 
+-    KHTMLPart *part = static_cast<KHTMLView *>(m_view)->part();
+-    KParts::BrowserExtension *ext = part->browserExtension();
+-    if( embed && !embed->pluginPage.isEmpty() && ext ) {
+-        // Prepare the mimetype to show in the question (comment if available, name as fallback)
+-        QString mimeName = serviceType;
+-        KMimeType::Ptr mime = KMimeType::mimeType(serviceType);
+-        if ( mime->name() != KMimeType::defaultMimeType() )
+-            mimeName = mime->comment();
+-
+-        // Check if we already asked the user, for this page
+-        if (!mimeName.isEmpty() && part->docImpl() && !part->pluginPageQuestionAsked( serviceType ) )
+-        {
+-            part->setPluginPageQuestionAsked( serviceType );
+-            // Prepare the URL to show in the question (host only if http, to make it short)
+-            KURL pluginPageURL( embed->pluginPage );
+-            QString shortURL = pluginPageURL.protocol() == "http" ? pluginPageURL.host() : pluginPageURL.prettyURL();
+-            int res = KMessageBox::questionYesNo( m_view,
+-                                                  i18n("No plugin found for '%1'.\nDo you want to download one from %2?").arg(mimeName).arg(shortURL),
+-                                                  i18n("Missing Plugin"), i18n("Download"), i18n("Do Not Download"), QString("plugin-")+serviceType);
+-            if ( res == KMessageBox::Yes )
+-            {
+-                // Display vendor download page
+-                ext->createNewWindow( pluginPageURL );
+-                return;
+-            }
+-        }
+-    }
+-
+     // didn't work, render alternative content.
+     if ( element() && (
+          element()->id() == ID_OBJECT || element()->id() == ID_EMBED || element()->id() == ID_APPLET))

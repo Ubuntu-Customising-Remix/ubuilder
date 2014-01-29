@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+#    Copyright (C) 2010 Karl Goetz
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source apt
+apt-get --yes build-dep apt
+cd apt-*
+
+rm doc/examples/sources.list
+cat << EOF >> doc/examples/sources.list
+# See sources.list(5) for more information, especialy
+# Remember that you can only use http, ftp or file URIs
+# CDROMs are managed through the apt-cdrom tool.
+deb http://us.archive.gnewsense.org/gnewsense deltah main universe
+deb-src http://us.archive.gnewsense.org/gnewsense deltah main universe
+
+deb http://security.gnewsense.org/gnewsense deltah-security main universe
+deb-src http://security.gnewsense.org/gnewsense deltah-security main universe
+
+deb http://us.archive.gnewsense.org/gnewsense deltah-updates main universe
+deb-src http://us.archive.gnewsense.org/gnewsense deltah-updates main universe
+EOF
+
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${APT_VERSION}'#p' debian/changelog) "Changed for $DISTRONAME"
+
+dpkg-buildpackage $DPKGOPTS

@@ -1,0 +1,52 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Brian Brazil
+#    Copyright (C) 2011  Sam Geeraerts
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+IMGDIR=$PWD/images
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source kdebase$VERSION
+apt-get --yes build-dep kdebase$VERSION
+cd kdebase-*
+
+#for file in konqueror/about/konq_aboutpage.cc konqueror/about/specs.html ; do
+	# Delete references to Adobe Flash, Blackdown Java, Sun Java and Real software.
+#	for regex in 'Flash' 'java\.sun\.com' 'lackdown' 'Real' 'real\.com' 'arg.*about:plugins' ; do
+#		sed -i /$regex/d $file
+#	done
+#done
+
+#if [[ "$VERSION" =~ "3.5.9" ]] ; then
+#	cp "$IMGDIR"/kdebase-3.5.9.patch debian/patches/gnewsense.patch
+#elif [[ "$VERSION" =~ "3.5.10" ]] ; then
+#	cp "$IMGDIR"/kdebase-3.5.10.patch debian/patches/gnewsense.patch
+#else
+#	echo "Unknown version of kdebase. To be patched."
+#	exit 1
+#fi
+cp "$IMGDIR"/kdebase.patch debian/patches/gnewsense.patch
+
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${KDEBASE_VERSION}'#p' debian/changelog)  "Remove links to non-free software from Konqueror's Specifications page."
+
+dpkg-buildpackage $DPKGOPTS

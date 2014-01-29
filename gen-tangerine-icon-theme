@@ -1,0 +1,75 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Brian Brazil
+#    Copyright (C) 2011  Sam Geeraerts
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+IMGDIR=$PWD/images
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source tangerine-icon-theme$VERSION
+apt-get --yes build-dep tangerine-icon-theme$VERSION
+cd tangerine-icon-theme-*
+
+# CC-BY-SA doesn't belong in non-free.
+sed -i -e "s#Section: non-free/x11#Section: x11#g" debian/control.in
+
+# Icons
+function replace_image_old () {
+	local size="$1"
+	local type="$2"
+	if [ "$type" == "svg" ] ; then
+		local source="$IMGDIR"/svg/"$DISTRONAME_L".svg
+		local destination=scalable/places/start-here.svg
+	else
+		local source="$IMGDIR"/"$DISTRONAME_L"-icon-"$size".png
+		local destination="$size"/places/start-here.png
+	fi
+	if [ -f "$source" ]; then
+		cp "$source" "$destination"
+	else
+		convert -size "$size" xc:transparent -fill $LOGO_COLOUR -gravity Center -pointsize 44 -draw "text 0,-4 '$LOGO_LETTER'" "$destination"
+	fi
+}
+
+function replace_image() {
+	local vlen="$1"  # Lengt of a vertex of the square.
+	local type="$2"
+	local source="$IMGDIR"/svg/"$DISTRONAME_L".svg
+	if [ "$type" == "svg" ] ; then
+		local destination=scalable/places/start-here.svg
+		cp "$source" "$destination"
+	else
+		local destination="$vlen"x"$vlen"/places/start-here.png
+		convert -background none "$source" -resize x"$vlen" -gravity Center \
+			-crop "$vlen"x"$vlen"+0+0 "$destination"
+	fi
+}
+
+replace_image 16 png
+replace_image 22 png
+replace_image 32 png
+replace_image 0 svg
+
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${TANGERINE_ICON_THEME_VERSION}'#p' debian/changelog)  "Munged to show $DISTRONAME graphics"
+
+dpkg-buildpackage $DPKGOPTS

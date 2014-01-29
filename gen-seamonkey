@@ -1,0 +1,64 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Brian Brazil
+#    Copyright (C) 2011  Sam Geeraerts
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+IMGDIR=$PWD/images
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source seamonkey$VERSION
+apt-get --yes build-dep seamonkey$VERSION
+cd seamonkey-*
+
+RE_OLDVERSION="1.1.9"
+
+if [[ "$VERSION" =~ $RE_OLDVERSION ]] ; then
+	# Remove hyperlinks on about:plugins to Mozilla pages with non-free stuff.
+	dirty_file=xpfe/global/resources/content/plugins.html
+	if [ -f "$dirty_file" ] ; then
+		sed -i '/id=\\"findmore\\"/,+3d' "$dirty_file"
+		sed -i '/id=\\"installhelp\\"/,+3d' "$dirty_file"
+	fi
+	# Remove references to Seamonkey website (linking to non-free add-ons) from
+	# user interface.
+	regex='http://www.seamonkey-project.org/.*/\?'
+	dirty_file=xpfe/browser/resources/locale/en-US/region.properties
+	if [ -f "$dirty_file" ] ; then
+		sed -i "s,$regex,about:blank,g" "$dirty_file"
+	fi
+	dirty_file=editor/ui/locales/en-US/chrome/region/region.properties
+	if [ -f "$dirty_file" ] ; then
+		sed -i "s,$regex,about:blank,g" "$dirty_file"
+	fi
+	dirty_file=mailnews/base/resources/locale/en-US/region.properties
+	if [ -f "$dirty_file" ] ; then
+		sed -i "s,$regex,about:blank,g" "$dirty_file"
+	fi
+else
+	cp "$IMGDIR"/seamonkey.patch debian/patches/gnewsense.patch
+	echo gnewsense.patch >> debian/patches/series
+fi
+
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${SEAMONKEY_VERSION}'#p' debian/changelog)  "Removed hyperlinks to non-free plugins."
+
+dpkg-buildpackage $DPKGOPTS

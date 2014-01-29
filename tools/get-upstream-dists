@@ -1,0 +1,51 @@
+#!/bin/bash
+#
+#    Copyright (C) 2012  Karl Goetz
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+set -ex
+cd `dirname $0`/../
+. config
+
+# Create our working directories if they don't exist
+[ ! -d $MIRRORLOCAL/dists/ ] && mkdir -p $MIRRORLOCAL/dists/
+[ ! -d $WORKINGDIR/dists-download/ ] && mkdir -p $WORKINGDIR/dists-download/
+
+# For each of the dists we target, download the packages files.
+for dist in '' -security $EXTRAS; do
+	# If we have apt-cacher-ng in use, use its dists (site specific code
+	# path, I know ...)
+	if [ -d /var/cache/apt-cacher-ng/*/ubuntu/dists/$MIRRORDIST$dist ]; then
+		# Sync the dists files into place.
+		rsync -a /var/cache/apt-cacher-ng/*/ubuntu/dists/$MIRRORDIST$dist $MIRRORLOCAL/dists/
+	else
+		# If we don't have apt-cacher, download the lists from a mirror.
+		wget -q -c -m -np -nH --cut-dirs=3 -A "Packages.bz2" \
+			-A "Sources.bz2" -P$WORKINGDIR/dists-download \
+			$MIRROR/dists/$MIRRORDIST$dist/
+		# Sync the dists files into place.
+		rsync -a $WORKINGDIR/dists-download $MIRRORLOCAL/dists/
+	fi
+done
+
+# Extract the lists so awk can handle them
+find $MIRRORLOCAL/dists/ -name Packages.bz2 -exec bunzip2 -f {} \;
+find $MIRRORLOCAL/dists/ -name Sources.bz2 -exec bunzip2 -f {} \;
+
+# Tidy up.
+rm -rf $WORKINGDIR/dists-download
+

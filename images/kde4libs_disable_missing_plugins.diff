@@ -1,0 +1,50 @@
+diff -Nur hardy/kde4libs-4.0.3//khtml/html/html_objectimpl.cpp gns1/kde4libs-4.0.3//khtml/html/html_objectimpl.cpp
+--- a//khtml/html/html_objectimpl.cpp	2008-03-27 21:33:21.000000000 +0100
++++ b/khtml/html/html_objectimpl.cpp	2013-01-02 19:53:08.575294584 +0100
+@@ -539,46 +539,6 @@
+ 
+ void HTMLObjectBaseElementImpl::slotPartLoadingErrorNotify()
+ {
+-    // If we have an embed, we may be able to tell the user where to
+-    // download the plugin.
+-
+-    HTMLEmbedElementImpl *embed = relevantEmbed();
+-    QString serviceType; // shadows ours, but we don't care.
+-
+-    if (!embed)
+-        return;
+-
+-    serviceType = embed->serviceType;
+-
+-    KHTMLPart* part = getDocument()->part();
+-    KParts::BrowserExtension *ext = part->browserExtension();
+-
+-    if(!embed->pluginPage.isEmpty() && ext) {
+-        // Prepare the mimetype to show in the question (comment if available, name as fallback)
+-        QString mimeName = serviceType;
+-        KMimeType::Ptr mime = KMimeType::mimeType(serviceType);
+-        if ( mime && mime->name() != KMimeType::defaultMimeType() )
+-            mimeName = mime->comment();
+-
+-        // Check if we already asked the user, for this page
+-        if (!mimeName.isEmpty() && !part->pluginPageQuestionAsked(serviceType))
+-        {
+-            part->setPluginPageQuestionAsked(serviceType);
+-
+-            // Prepare the URL to show in the question (host only if http, to make it short)
+-            KUrl pluginPageURL(embed->pluginPage);
+-            QString shortURL = pluginPageURL.protocol() == "http" ? pluginPageURL.host() : pluginPageURL.prettyUrl();
+-            int res = KMessageBox::questionYesNo( part->view(),
+-                                                  i18n("No plugin found for '%1'.\nDo you want to download one from %2?", mimeName, shortURL),
+-                                                  i18n("Missing Plugin"), KGuiItem(i18n("Download")), KGuiItem(i18n("Do Not Download")), QString("plugin-")+serviceType);
+-            if (res == KMessageBox::Yes)
+-            {
+-                // Display vendor download page
+-                ext->createNewWindow(pluginPageURL);
+-                return;
+-            }
+-        }
+-    }
+ }
+ 
+ 

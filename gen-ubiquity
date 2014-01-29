@@ -1,0 +1,154 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Brian Brazil
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+IMGDIR=$PWD/images
+
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source ubiquity$VERSION
+apt-get --yes build-dep ubiquity$VERSION
+cd ubiquity-*
+
+# Logo
+
+if [ -f $IMGDIR/$DISTRONAME_L-icon-24x24.png ]; then
+	convert -size 48x48 xc:transparent \
+		-tile $IMGDIR/$DISTRONAME_L-icon-24x24.png -draw "rectangle 4,4 20,20"  \
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/ubiquity.png
+else
+	convert -size 48x48 xc:transparent -fill $LOGO_COLOUR -gravity NorthWest \
+		-pointsize 24 -draw "text 6,-4 '$LOGO_LETTER'"  \
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/ubiquity.png
+fi
+
+
+
+if [ -f $IMGDIR/k$DISTRONAME_L-icon-16x16.png ]; then
+
+	cp $IMGDIR/k${DISTRONAME_L}-icon-16x16.png desktop/cr16-app-ubiquity.png
+	cp $IMGDIR/k${DISTRONAME_L}-icon-22x22.png desktop/cr22-app-ubiquity.png
+	cp $IMGDIR/k${DISTRONAME_L}-icon-32x32.png desktop/cr32-app-ubiquity.png
+	cp $IMGDIR/k${DISTRONAME_L}-icon-48x48.png desktop/cr48-app-ubiquity.png
+	cp $IMGDIR/k${DISTRONAME_L}-icon-64x64.png desktop/cr64-app-ubiquity.png
+	cp $IMGDIR/k${DISTRONAME_L}-icon-128x128.png desktop/cr128-app-ubiquity.png
+
+else
+	convert -size 16x16 xc:transparent -fill $KLOGO_COLOUR -gravity NorthWest \
+		-pointsize 24 -draw "text 6,-4 '$LOGO_LETTER'"  \
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/cr16-app-ubiquity.png
+	convert -size 22x22 xc:transparent -fill $KLOGO_COLOUR -gravity NorthWest \
+		-pointsize 24 -draw "text 6,-4 '$LOGO_LETTER'"  \
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/cr22-app-ubiquity.png
+	convert -size 32x32 xc:transparent -fill $KLOGO_COLOUR -gravity NorthWest \
+		-pointsize 24 -draw "text 6,-4 '$LOGO_LETTER'"  \
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/cr32-app-ubiquity.png
+	convert -size 48x48 xc:transparent -fill $KLOGO_COLOUR -gravity NorthWest \
+		-pointsize 24 -draw "text 6,-4 '$LOGO_LETTER'"  \
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/cr48-app-ubiquity.png
+	convert -size 64x64 xc:transparent -fill $KLOGO_COLOUR -gravity NorthWest \
+		-pointsize 24 -draw "text 6,-4 '$LOGO_LETTER'"  \
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/cr64-app-ubiquity.png
+	convert -size 128x128 xc:transparent -fill $KLOGO_COLOUR -gravity NorthWest \
+		-pointsize 24 -draw "text 6,-4 '$LOGO_LETTER'"  \
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/cr128-app-ubiquity.png
+	
+fi
+
+
+# modify liveinstaller.ui to strip kubuntu image and add our own later on
+#if [ -f $IMGDIR/$DISTRONAME_L-liveinstaller.ui  ]; then
+#	cp $IMGDIR/$DISTRONAME_L-liveinstaller.ui   ubiquity/frontend/liveinstaller.ui
+#fi
+
+
+######## choose-mirror
+
+sed -i "s/^MASTERLIST=.*/MASTERLIST=Mirrors.masterlist.$DISTRONAME_L/" d-i/source/choose-mirror/Makefile
+cat <<EOF > d-i/source/choose-mirror/Mirrors.masterlist.$DISTRONAME_L
+Site: \${CC}.archive.$DOMAIN
+Type: Push-Secondary
+Archive-http: /$DISTRONAME_L/
+Archive-architecture: $GNS_HOST_ARCH
+Country: \${UCC} \${CNAME}
+EOF
+
+######## Apt-setup
+
+cd d-i/source/apt-setup/
+# Ignore these for now 
+echo -e '#!/bin/sh\ncat $1 >> $2' > apt-setup-verify
+
+cat <<EOFXX > generators/50mirror.$DISTRONAME_L
+#!/bin/bash
+set -e
+
+. /usr/share/debconf/confmodule
+
+file="\$1"
+
+choose-mirror -n
+
+db_get mirror/codename
+codename="\$RET"
+db_get mirror/protocol
+protocol="\$RET"
+db_get mirror/\$protocol/hostname
+hostname="\$RET"
+db_get mirror/\$protocol/directory
+directory="/\${RET#/}"
+
+if [ "\$protocol" = http ]; then
+	db_get mirror/\$protocol/proxy
+	proxy="\$RET"
+	if [ -n "\$proxy" ]; then
+		if ! grep -iq "Acquire::\$protocol::Proxy" \$ROOT/etc/apt/apt.conf.new; then
+			echo "Acquire::\$protocol::Proxy \"\$proxy\";" >> \$ROOT/etc/apt/apt.conf.new
+		fi
+	fi
+fi
+
+dists="main universe"
+
+# Use similar naming scheme for security
+sec_host=\${hostname/archive/security}
+
+cat > \$file <<EOF
+deb \$protocol://\$hostname\$directory \$codename \$dists
+deb-src \$protocol://\$hostname\$directory \$codename \$dists
+
+deb \$protocol://\$sec_host\$directory \$codename-security \$dists
+deb-src \$protocol://\$sec_host\$directory \$codename-security \$dists
+EOF
+EOFXX
+
+chmod 755 generators/50mirror.$DISTRONAME_L
+cd ../../..
+pwd 
+sed -i -e 's#^d-i/source/apt-setup/generators/50mirror.ubuntu#d-i/source/apt-setup/generators/50mirror.'$DISTRONAME_L'#;' \
+ 	-e '/d-i\/source\/apt-setup\/generators\/..\(security\|cdrom\)/d' \
+	debian/ubiquity.install-any
+
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${UBIQUITY_VERSION}'#p' debian/changelog)  'Changed mirrors and graphics'
+
+dpkg-buildpackage $DPKGOPTS

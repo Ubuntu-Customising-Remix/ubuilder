@@ -1,0 +1,115 @@
+#!/bin/bash
+
+
+# Get distro information
+. config
+
+mkdir -p $REPODST/conf
+
+cd $REPODST
+
+cat >  conf/distributions <<EOF
+Origin: $DISTRONAME
+Label: $DISTRONAME
+Codename: ${RELEASE}-security
+Update: Upstream-security
+Architectures: $ALL_REPO_ARCHES source
+Components: main universe multiverse restricted
+UDebComponents: main
+SignWith: $SIGNINGKEY
+DscIndices: Sources Release . .gz
+#DebOverride: override.$RELEASE-security.bin
+#UDebOverride: override.$RELEASE-security.bin
+#DscOverride: override.$RELEASE-security.src
+
+Origin: $DISTRONAME
+Label: $DISTRONAME
+Codename: $RELEASE
+Update: Upstream
+Architectures: $ALL_REPO_ARCHES source
+Components: main universe multiverse restricted
+UDebComponents: main
+SignWith: $SIGNINGKEY
+DscIndices: Sources Release . .gz
+#DebOverride: override.$RELEASE.bin
+#UDebOverride: override.$RELEASE.bin
+#DscOverride: override.$RELEASE.src
+EOF
+
+cat >  conf/updates <<EOF
+Name: Upstream-security
+Method: $MIRROR
+Suite: ${MIRRORDIST}-security
+Components: main>main universe>universe multiverse>multiverse restricted>restricted
+FilterList: install purge-$MIRRORDIST
+VerifyRelease: blindtrust
+
+Name: Upstream
+Method: $MIRROR
+Suite: $MIRRORDIST
+Components: main>main universe>universe multiverse>multiverse restricted>restricted
+FilterList: install purge-$MIRRORDIST
+VerifyRelease: blindtrust
+EOF
+
+if [ 1 == $UPDATES ]; then
+cat >> conf/updates <<EOF
+
+Name: Upstream-updates
+Method: $MIRROR
+Suite: ${MIRRORDIST}-updates
+Components: main>main universe>universe multiverse>multiverse restricted>restricted
+FilterList: install purge-$MIRRORDIST
+VerifyRelease: blindtrust
+EOF
+
+cat >>  conf/distributions <<EOF
+
+Origin: $DISTRONAME
+Label: $DISTRONAME
+Codename: $RELEASE-updates
+Update: Upstream-updates
+Architectures: $ALL_REPO_ARCHES source
+Components: main universe multiverse restricted
+UDebComponents: main
+SignWith: $SIGNINGKEY
+DscIndices: Sources Release . .gz
+#DebOverride: override.$RELEASE-updates.bin
+#UDebOverride: override.$RELEASE-updates.bin
+#DscOverride: override.$RELEASE-updates.src
+EOF
+fi
+
+if [ 1 == $BACKPORTS ]; then
+cat >> conf/updates <<EOF
+
+Name: Upstream-backports
+Method: $MIRROR
+Suite: ${MIRRORDIST}-backports
+Components: main>main universe>universe multiverse>multiverse restricted>restricted
+FilterList: install purge-$MIRRORDIST
+VerifyRelease: blindtrust
+EOF
+
+cat >>  conf/distributions <<EOF
+
+Origin: $DISTRONAME
+Label: $DISTRONAME
+Codename: $RELEASE-backports
+Update: Upstream-backports
+Architectures: $ALL_REPO_ARCHES source
+Components: main universe multiverse restricted
+UDebComponents: main
+SignWith: $SIGNINGKEY
+DscIndices: Sources Release . .gz
+#DebOverride: override.$RELEASE-backports.bin
+#UDebOverride: override.$RELEASE-backports.bin
+#DscOverride: override.$RELEASE-backports.src
+EOF
+fi;
+
+
+mkdir -p $REPODST/cdimage
+mkdir -p $REPODST/apt/{var,lists/partial,cache/archives/partial}
+touch $REPODST/apt/status
+touch conf/purge-$MIRRORDIST

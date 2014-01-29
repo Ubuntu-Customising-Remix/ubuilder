@@ -1,0 +1,54 @@
+#!/bin/bash
+#	
+#    Copyright (C) 2006  Christian Fernandez
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+#    based on Brian's gen-meta
+
+# This file should be merged with gen-meta; its 99% redundant
+
+. config
+
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source kubuntu-meta$VERSION
+apt-get --yes build-dep kubuntu-meta$VERSION
+cd kubuntu-meta-*
+
+for i in desktop live; do
+	n=META_KDE_${i}_REMOVE
+	for p in ${!n}; do
+		sed -i "/^$p$/d" ${i}-$GNS_HOST_ARCH
+	done;
+	n=META_KDE_${i}_ADD
+	for p in ${!n}; do
+		echo "$p" >> ${i}-$GNS_HOST_ARCH
+	done;
+done;
+
+
+sed -i "s/package=kubuntu/package=k${DISTRONAME_L}/;
+	/^binary-indep:/,/^$/s/.* -i.*//" debian/rules
+sed -i "/Package: kubuntu-base/,/^$/d; 
+	s/kubuntu-/k${DISTRONAME_L}-/; 
+	s/Kubuntu/k$DISTRONAME/g" debian/control
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'k${DISTRONAME_L}${KMETA_VERSION}'#p' debian/changelog)  "Altered for $RELEASE"
+sed -i "1s/^kubuntu-meta/k${DISTRONAME_L}-meta/" debian/changelog
+
+dpkg-buildpackage $DPKGOPTS

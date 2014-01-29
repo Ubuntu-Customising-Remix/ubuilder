@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Brian Brazil
+#    Copyright (C) 2013  Sam Geeraerts
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+IMGDIR=$PWD/images
+
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source kde4libs$VERSION
+apt-get --yes build-dep kde4libs$VERSION
+cd kde4libs-*
+
+cp "$IMGDIR"/kde4libs_disable_missing_plugins.diff debian/patches/gns_disable_missing_plugins.diff
+echo gns_disable_missing_plugins.diff >> debian/patches/series
+
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${KDE4LIBS_VERSION}'#p' debian/changelog)  "Don't suggest downloading non-free plugins."
+
+dpkg-buildpackage $DPKGOPTS

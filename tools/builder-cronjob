@@ -1,0 +1,21 @@
+#!/bin/sh -ex
+#
+#    Copyright (C) 2006  Brian Brazil
+#    Copyright (C) 2012  Karl Goetz
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+
+# Update our bzr checkout
+/srv/builder/tools/update_builder.sh
+
+# Update package lists accessed by builder
+/srv/builder/tools/get-upstream-dists
+
+# Run cronwrapper to update builder
+/srv/builder/tools/cronwrapper /srv/logs/update_gnewsense \
+	'cd /srv/builder/ && linux32 ./do-update && ./push-repo'
+

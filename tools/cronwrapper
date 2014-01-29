@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Brian Brazil
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+# Run a command and save output to a logfile, and output a warning if the
+# command fails. Intended to be run from cron.
+# Also does locking
+# Usage: cronwrapper /path/to/log/files/and_file_prefix command arg1 arg2
+
+LOCKFILE="$1".lock
+if ! ln -s "$$.$HOSTNAME" "$LOCKFILE"; then
+	echo "Error: lockfile '$LOCKFILE' exists"
+	exit 1
+fi
+
+LOGFILE="$1.$HOSTNAME.$(date +'%F.%R:%S')"
+shift
+
+echo "cronwrapper: starting '$@' at $(date)" >> $LOGFILE
+
+# Is there a better way to do this?
+if ! bash <<<"$@" >> "$LOGFILE" 2>&1; then
+	echo "cronwrapper: error in '$@' at $(date)" >> $LOGFILE
+	echo "An error occured. See $LOGFILE for logs"
+	echo "Leaving lockfile in place"
+	exit 1
+fi;
+
+echo "cronwrapper: finished '$@' at $(date)" >> $LOGFILE
+
+rm "$LOCKFILE"

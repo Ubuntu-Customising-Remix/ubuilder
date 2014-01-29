@@ -1,0 +1,4 @@
+# Put here overrides for source packages for which package info can't be
+# fetched from the upstream mirror.
+gnewsense-artwork Section gnome
+gnewsense-meta Section base

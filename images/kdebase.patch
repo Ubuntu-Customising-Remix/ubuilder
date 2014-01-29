@@ -1,0 +1,20 @@
+diff -Nur kdebase-3.5.9/konqueror/about/konq_aboutpage.cc kdebase-3.5.9.new/konqueror/about/konq_aboutpage.cc
+--- kdebase-3.5.9/konqueror/about/konq_aboutpage.cc	2005-09-10 10:25:48.000000000 +0200
++++ kdebase-3.5.9.new/konqueror/about/konq_aboutpage.cc	2011-07-30 00:14:30.000000000 +0200
+@@ -256,13 +256,10 @@
+           .arg( i18n("<A HREF=\"%1\">ECMA-262</A> Edition 3 (roughly equals JavaScript 1.5)").arg("http://www.ecma.ch/ecma1/STAND/ECMA-262.HTM") )
+           .arg( i18n("JavaScript disabled (globally). Enable JavaScript <A HREF=\"%1\">here</A>.").arg("exec:/kcmshell khtml_java_js") )
+           .arg( i18n("JavaScript enabled (globally). Configure JavaScript <A HREF=\\\"%1\\\">here</A>.").arg("exec:/kcmshell khtml_java_js") ) // leave the double backslashes here, they are necessary for javascript !
+-          .arg( i18n("Secure <A HREF=\"%1\">Java</A><SUP>&reg;</SUP> support").arg("http://java.sun.com") )
+-          .arg( i18n("JDK 1.2.0 (Java 2) compatible VM (<A HREF=\"%1\">Blackdown</A>, <A HREF=\"%2\">IBM</A> or <A HREF=\"%3\">Sun</A>)")
+-                      .arg("http://www.blackdown.org").arg("http://www.ibm.com").arg("http://java.sun.com") )
++          .arg( i18n("Secure Java support") )
++          .arg( i18n("JDK 1.2.0 (Java 2) compatible VM") )
+           .arg( i18n("Enable Java (globally) <A HREF=\"%1\">here</A>.").arg("exec:/kcmshell khtml_java_js") ) // TODO Maybe test if Java is enabled ?
+-          .arg( i18n("Netscape Communicator<SUP>&reg;</SUP> <A HREF=\"%4\">plugins</A> (for viewing <A HREF=\"%1\">Flash<SUP>&reg;</SUP></A>, <A HREF=\"%2\">Real<SUP>&reg;</SUP></A>Audio, <A HREF=\"%3\">Real<SUP>&reg;</SUP></A>Video, etc.)")
+-                      .arg("http://www.macromedia.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash")
+-                      .arg("http://www.real.com").arg("http://www.real.com")
++          .arg( i18n("Netscape Communicator<SUP>&reg;</SUP> <A HREF=\"%1\">plugins</A> (for viewing Flash<SUP>&reg;</SUP>, Real<SUP>&reg;</SUP>Audio, Real<SUP>&reg;</SUP>Video, etc.)")
+                       .arg("about:plugins") )
+           .arg( i18n("built-in") )
+           .arg( i18n("Secure Sockets Layer") )

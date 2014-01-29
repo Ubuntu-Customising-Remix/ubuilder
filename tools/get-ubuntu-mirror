@@ -1,0 +1,72 @@
+#!/bin/bash
+
+###############################################################################
+#    (C) 2009-2011 hyperclock (aka Jimmy M. Coleman)
+#	 website:  www.cybernux.org
+#	 email:    hyperclock(at)cybernux(dot)org
+#	 svn:	   http://xp-dev.com/svn/ForkForge/
+# 	 trac:	   http://xp-dev.com/trac/ForkForge
+# 
+###############################################################################
+###############################################################################
+#    ForkForge - Scripts designed to build Cybernux Linux® based on Debian.
+#
+#    ForkForge is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    ForkForge is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy (see docs/gpl-3.0.txt) of the GNU General 
+#    Public License along with ForkForge.  If not, see 
+#    <http://www.gnu.org/licenses/>.
+#
+################################################################################
+
+## Main Debian Mirror
+#export GNUPGHOME=/deb-mirror/keyring/
+
+# ---------------------------------------
+# Simple debmirror update script example
+# Make your changes below
+# --------------------------------------
+
+ARCHITECTURES="i386,amd64"
+SECTIONS="main,main/debian-installer,universe,multiverse,restricted"
+DISTS="saucy,saucy-security,saucy-updates,saucy-backports"
+REMOTE_MIRROR="archive.ubuntu.com"
+LOCAL_MIRROR="/opt/ubuntu-mirror/ubuntu"
+
+# ----------------------------------------------------------------------
+# put OPT_SOURCES as "--source" or leave blank to have sources included
+# ----------------------------------------------------------------------
+OPT_SOURCES="--source"
+
+
+# -------------------------------------------------------
+# Don't change below, unless you know what you are doing.
+# -------------------------------------------------------
+LOCK="${LOCAL_MIRROR}/mirror.lock"
+
+
+if [ -f "${LOCK}" ]; then
+        echo "ERUNNING: \"`basename ${0}`\" is already running."
+        exit 1
+else
+        trap "test -f ${LOCK} && rm -f ${LOCK}; exit 0" 0 2 15
+
+        touch ${LOCK}
+
+        debmirror --arch="${ARCHITECTURES}" --section="${SECTIONS}" \
+                --method=http --root=":ubuntu" ${OPT_SOURCES} \
+                --host="${REMOTE_MIRROR}" --no-check-gpg \
+                --dist="${DISTS}" --diff=use --i18n --omit-suite-symlinks \
+                --progress "${LOCAL_MIRROR}"
+
+
+fi
+#unset $GNUPGHOME

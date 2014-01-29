@@ -1,0 +1,131 @@
+diff -Nur mozilla/mozilla/toolkit/content/plugins.html mozilla.new/mozilla/toolkit/content/plugins.html
+--- mozilla/mozilla/toolkit/content/plugins.html	2010-12-06 13:52:11.000000000 +0100
++++ mozilla.new/mozilla/toolkit/content/plugins.html	2011-03-12 16:13:17.000000000 +0100
+@@ -98,14 +98,6 @@
+   else
+     document.writeln("<h1 id=\"noplugs\">" + pluginsbundle.GetStringFromName("nopluginsareinstalled_label") + "<\/h1>");
+ 
+-  document.writeln("<div id=\"findmore\">" + pluginsbundle.GetStringFromName("findmore_label") + " ");
+-  document.writeln("<a href=\"" + regionbundle.GetStringFromName("more_plugins_url") + "\">" + regionbundle.GetStringFromName("more_plugins_label") + "<\/a>.");
+-  document.writeln("<\/div>");
+-
+-  document.writeln("<div id=\"installhelp\">" + pluginsbundle.GetStringFromName("installhelp_label") + " ");
+-  document.writeln("<a href=\"" + regionbundle.GetStringFromName("plugindoc_url") + "\">" + regionbundle.GetStringFromName("plugindoc_label") + "<\/a>.");
+-  document.writeln("<\/div><hr>");
+-
+   for (var i = 0; i < numPlugins; i++)
+   {
+     var plugin = navigator.plugins[i];
+diff -Nur mozilla/mozilla/toolkit/mozapps/plugins/content/pluginInstallerWizard.js mozilla.new/mozilla/toolkit/mozapps/plugins/content/pluginInstallerWizard.js
+--- mozilla/mozilla/toolkit/mozapps/plugins/content/pluginInstallerWizard.js	2010-12-06 13:52:12.000000000 +0100
++++ mozilla.new/mozilla/toolkit/mozapps/plugins/content/pluginInstallerWizard.js	2011-07-26 15:42:22.000000000 +0200
+@@ -107,6 +107,7 @@
+     this.mPluginInfoArrayLength++;
+   } else {
+     this.mPluginNotFoundArray[aPluginRequestItem.mimetype] = aPluginRequestItem;
++    this.mPluginNotFoundArray[aPluginRequestItem.mimetype].pluginsPage = null;
+     this.mPluginNotFoundArrayLength++;
+   }
+ 
+diff -Nur mozilla/mozilla/toolkit/mozapps/plugins/content/pluginInstallerWizard.xul mozilla.new/mozilla/toolkit/mozapps/plugins/content/pluginInstallerWizard.xul
+--- mozilla/mozilla/toolkit/mozapps/plugins/content/pluginInstallerWizard.xul	2010-12-06 13:52:12.000000000 +0100
++++ mozilla.new/mozilla/toolkit/mozapps/plugins/content/pluginInstallerWizard.xul	2011-05-14 17:03:32.000000000 +0200
+@@ -138,10 +138,6 @@
+ 
+     <description id="pluginSummaryRestartNeeded" style="padding-top:10px;"
+                  value="&pluginWizard.finalPage.restart.label;"/>
+-    <spacer flex="1" />
+-    <description id="moreInfoLink"
+-      style="color:rgb(0, 0, 255); cursor:pointer; text-decoration:underline;"
+-      value="&pluginWizard.finalPage.moreInfo.label;"/>
+   </wizardpage>
+ 
+ </wizard>
+diff -Nur mozilla/suite/browser/browser-prefs.js mozilla.new/suite/browser/browser-prefs.js
+--- mozilla/suite/browser/browser-prefs.js	2010-12-06 13:35:09.000000000 +0100
++++ mozilla.new/suite/browser/browser-prefs.js	2011-04-30 16:30:40.000000000 +0200
+@@ -67,7 +67,7 @@
+ 
+ // 0 = blank, 1 = home (browser.startup.homepage), 2 = last
+ pref("browser.startup.page",                1);
+-pref("browser.startup.homepage",	   "chrome://navigator-region/locale/region.properties");
++pref("browser.startup.homepage",	   "about:blank");
+ pref("browser.startup.homepage.count", 1);
+ 
+ pref("browser.warnOnQuit", true);
+@@ -471,18 +471,18 @@
+                                             // Themes every day
+ 
+ // Preferences for the Get Add-ons pane
+-pref("extensions.getAddons.showPane", true);
+-pref("extensions.getAddons.browseAddons", "https://addons.mozilla.org/%LOCALE%/%APP%");
++pref("extensions.getAddons.showPane", false);
++pref("extensions.getAddons.browseAddons", "http://www.gnu.org/software/gnuzilla/addons.html");
+ pref("extensions.getAddons.maxResults", 5);
+-pref("extensions.getAddons.recommended.browseURL", "https://addons.mozilla.org/%LOCALE%/%APP%/recommended");
+-pref("extensions.getAddons.recommended.url", "https://services.addons.mozilla.org/%LOCALE%/%APP%/api/%API_VERSION%/list/featured/all/10/%OS%/%VERSION%");
+-pref("extensions.getAddons.search.browseURL", "https://addons.mozilla.org/%LOCALE%/%APP%/search?q=%TERMS%");
+-pref("extensions.getAddons.search.url", "https://services.addons.mozilla.org/%LOCALE%/%APP%/api/%API_VERSION%/search/%TERMS%/all/10/%OS%/%VERSION%");
++pref("extensions.getAddons.recommended.browseURL", "http://www.gnu.org/software/gnuzilla/addons.html");
++pref("extensions.getAddons.recommended.url", "http://www.gnu.org/software/gnuzilla/addons.html");
++pref("extensions.getAddons.search.browseURL", "http://www.gnu.org/software/gnuzilla/addons.html");
++pref("extensions.getAddons.search.url", "http://www.gnu.org/software/gnuzilla/addons.html");
+ 
+ // Non-symmetric (not shared by extensions) extension-specific [update] preferences
+-pref("extensions.getMoreExtensionsURL", "chrome://branding/locale/brand.properties");
+-pref("extensions.getMoreThemesURL", "chrome://branding/locale/brand.properties");
+-pref("extensions.getMorePluginsURL", "chrome://branding/locale/brand.properties");
++pref("extensions.getMoreExtensionsURL", "http://www.gnu.org/software/gnuzilla/addons.html#addons");
++pref("extensions.getMoreThemesURL", "http://www.gnu.org/software/gnuzilla/addons.html#themes");
++pref("extensions.getMorePluginsURL", "about:blank");
+ pref("extensions.getMoreLocalesURL", "chrome://branding/locale/brand.properties");
+ pref("extensions.dss.enabled", false);          // Dynamic Skin Switching
+ pref("extensions.dss.switchPending", false);    // Non-dynamic switch pending after next
+@@ -510,7 +510,7 @@
+ pref("sidebar.customize.more_panels.url", "http://dmoz.org/Netscape/Sidebar/");
+ pref("sidebar.num_tabs_in_view", 8);
+ 
+-pref("browser.throbber.url","chrome://navigator-region/locale/region.properties");
++pref("browser.throbber.url","about:blank");
+ 
+ // pref to control the alert notification 
+ pref("alerts.slideIncrement", 1);
+diff -Nur mozilla/suite/locales/en-US/chrome/browser/region.properties mozilla.new/suite/locales/en-US/chrome/browser/region.properties
+--- mozilla/suite/locales/en-US/chrome/browser/region.properties	2010-12-06 13:35:09.000000000 +0100
++++ mozilla.new/suite/locales/en-US/chrome/browser/region.properties	2011-07-26 18:51:55.000000000 +0200
+@@ -4,8 +4,8 @@
+ #
+ # all.js
+ #
+-browser.startup.homepage=http://www.seamonkey-project.org/start/
+-browser.throbber.url=http://www.seamonkey-project.org/
++browser.startup.homepage=about:blank
++browser.throbber.url=about:blank
+ browser.search.defaulturl=http://www.google.com/search?q=
+ 
+ browser.translation.service=http://translate.google.com/translate?prev=/language_tools&u=
+@@ -13,7 +13,7 @@
+ 
+ #config.js
+ #
+-startup.homepage_override_url=http://www.seamonkey-project.org/releases/seamonkey%VERSION%/
++startup.homepage_override_url=about:blank
+ 
+ # This is the default set of web based feed handlers shown in the reader
+ # selection UI
+diff -Nur mozilla/suite/locales/en-US/chrome/mailnews/region.properties mozilla.new/suite/locales/en-US/chrome/mailnews/region.properties
+--- mozilla/suite/locales/en-US/chrome/mailnews/region.properties	2010-12-06 13:35:09.000000000 +0100
++++ mozilla.new/suite/locales/en-US/chrome/mailnews/region.properties	2011-05-01 10:13:20.000000000 +0200
+@@ -2,9 +2,9 @@
+ # messenger.properties
+ # mailnews.js
+ mailnews.start_page.url=chrome://messenger/content/start.xhtml
+-messenger.throbber.url=http://www.seamonkey-project.org/
+-compose.throbber.url=http://www.seamonkey-project.org/
+-addressbook.throbber.url=http://www.seamonkey-project.org/
++messenger.throbber.url=about:blank
++compose.throbber.url=about:blank
++addressbook.throbber.url=about:blank
+ # To make mapit buttons to disappear in the addressbook, specify empty string.  For example:
+ # mail.addr_book.mapit_url.format=
+ # The format for "mail.addr_book.mapit_url.format" is:

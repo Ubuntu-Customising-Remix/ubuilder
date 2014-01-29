@@ -1,0 +1,101 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Brian Brazil
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+# Check the freshness of a list of mirrors, producing a webpage and
+# a warning to stdout if some are stale.
+# Usage: checkmirrors mirrorinfo output_page
+# mirrorinfo has lines of the form: 'URL max_staleness_in_seconds'
+# The listed URLS should have as their first line a time in seconds
+# since the epoch
+
+if [ $# -ne 2 ] ; then
+	echo "Usage: checkmirrors mirrorinfo output_page"
+	exit 1
+fi
+
+LOCKFILE="$2".lock
+if ! ln -s "$$.$HOSTNAME" "$LOCKFILE"; then
+	echo "Error: lockfile '$LOCKFILE' exists"
+#	exit 1
+fi
+
+NOW=$(date +%s)
+NOW_PRETTY=$(date -R -d @$NOW)	#Needs a newer version of date
+
+# Possible symlink attack here, make sure permissions are good
+cat <<EOF > "$2.$$"
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head><title>Mirror Freshness</title></head>
+<body>
+<h2>Mirror Freshness</h2>
+<table border="1">
+<tr><th>URL</th><th>Last Updated</th><th>Status</th><th>Slack</th></tr>
+EOF
+
+STALEMIRRORS=$(cat "$1" | while read LINE; do
+	URL=${LINE% *}
+	SLACK=${LINE#* }
+	# Only get first line, and make sure there's only numbers
+	LAST_UPDATED=$(GET "$URL"| head -1 | tr -dc 0-9)
+	LAST_UPDATED_PRETTY=$(date -R -d @"0$NOW")
+	DIFF=$(($NOW - $LAST_UPDATED))
+	if [ $DIFF -gt $SLACK ]; then
+		STATUS="<strong>STALE</strong>"
+		echo "Url: $URL Age: $DIFF"
+	else
+		STATUS="FRESH"
+	fi
+	# XSS here, but it's all script-owner provided data
+	cat <<EOF >> "$2.$$"
+<tr>
+	<td><a href="$URL">$URL</a></td>
+	<td>$LAST_UPDATED_PRETTY ($LAST_UPDATED)</td>
+	<td>$STATUS ($DIFF seconds)</td>
+	<td>${SLACK}s</td>
+</tr>
+EOF
+done)
+
+if [ -n "$STALEMIRRORS" ]; then
+	cat <<EOF
+One or more stale mirrors were found. They are:
+
+$STALEMIRRORS
+
+Run was at $NOW_PRETTY ($NOW).
+EOF
+fi
+
+RUNTIME=$(($(date +%s) - $NOW))
+cat <<EOF >> "$2.$$"
+</table>
+<p>
+Script run started at $NOW_PRETTY ($NOW). 
+Script run took $RUNTIME seconds.
+</p>
+</body>
+</html>
+EOF
+
+# Temporary file now good to go into place
+mv "$2.$$" "$2"
+
+rm "$LOCKFILE"

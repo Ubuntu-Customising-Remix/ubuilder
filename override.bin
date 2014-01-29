@@ -1,0 +1,22 @@
+# Put here overrides for binaries packages that can't be fetched from the
+# upstream mirror, e.g. renamed packages or packages from multiverse.
+gnewsense-artwork Section gnome
+gnewsense-desktop Section metapackages
+gnewsense-minimal Section metapackages
+gnewsense-mobile Section universe/metapackages
+gnewsense-mobile-dev Section universe/metapackages
+gnewsense-standard Section metapackages
+libvlc0 Section universe/libs
+libvlc0-dev Section universe/libdevel
+mozilla-plugin-vlc Section universe/graphics
+vlc Section universe/graphics
+vlc-nox Section universe/net
+vlc-plugin-alsa Section universe/graphics
+vlc-plugin-arts Section universe/graphics
+vlc-plugin-esd Section universe/graphics
+vlc-plugin-ggi Section universe/graphics
+vlc-plugin-glide Section universe/graphics
+vlc-plugin-pulse Section universe/graphics
+vlc-plugin-sdl Section universe/graphics
+vlc-plugin-svgalib Section universe/graphics
+wxvlc Section universe/graphics

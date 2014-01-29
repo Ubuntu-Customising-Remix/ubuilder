@@ -1,0 +1,411 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006 - 2009  Brian Brazil
+#    Copyright (C) 2009  Karl Goetz
+#    Copyright (C) 2010  Sam Geeraerts
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+if ! [ `which reprepro` ]; then
+	echo "Reprepro not in path, is it installed?"
+	exit 2
+fi
+
+. config
+
+discover_version(){
+	# $1 package source name
+	# $2 on disk repository ($MIRRORLOCAL or $REPODST)
+	# $3 Release ($MIRRORDIST or $BASE_RELEASE)
+	# $4 sub-release (-security,-updates,-backports)
+
+	# Find "Package:", then find "Version:" and print the second field
+	awk -v srcpkg=$1 'BEGIN { package_found = 0 }
+/^Package:/ {if ($2 == srcpkg) package_found = 1}
+/^Version:/ {if (package_found == 1) { print $2; exit; } }' $2/dists/$3$4/*/source/Sources
+}
+
+get_binaries(){
+  local codename=$1
+  local src=$2
+  
+  # Upstream codename.
+  local ucodename=$(echo "$codename" | sed "s/$RELEASE/$MIRRORDIST/")  
+
+  local binaries=$(awk -v pkg="$src" 'BEGIN { package_found = 0 }
+/^Package:/ { if ($2 == pkg) package_found = 1 }
+/^Binary:/ { if (package_found == 1 ) { for (i=2; i<=NF; i++) printf ("%s", $i);
+exit; } }' \
+"$MIRRORLOCAL"/dists/"$ucodename"/*/source/Sources)
+  binaries=$(echo "$binaries" | tr ',' ' ')
+
+  # Dirty hack (hopefully temporary).
+  if [ -z "$binaries" ] ; then
+    binaries=$(egrep "^$src=" binaries | cut -d "=" -f 2)
+  fi
+
+  echo "$binaries"
+}
+
+get_section(){
+  local codename=$1
+  local src=$2 # Source package name
+  local bin=$3 # Binary package name (optional)
+  
+  local section=""
+  # Upstream codename.
+  local ucodename=$(echo "$codename" | sed "s/$RELEASE/$MIRRORDIST/")
+  
+  if [ -n "$bin" ] ; then
+    section=$(awk -v pkg="$bin" 'BEGIN { package_found = 0 }
+/^Package:/ { if ($2 == pkg) package_found = 1 }
+/^Section:/ { if (package_found == 1) { print $2; exit; } }' \
+"$MIRRORLOCAL"/dists/"$ucodename"/*/binary-"$GNS_HOST_ARCH"/Packages)
+    if [ -z "$section" ] ; then
+      section=$(awk -v pkg="$bin" 'BEGIN { package_found = 0 }
+/^Package:/ { if ($2 == pkg) package_found = 1 }
+/^Section:/ { if (package_found == 1) { print $2; exit; } }' \
+"$MIRRORLOCAL"/dists/"$ucodename"/*/debian-installer/binary-"$GNS_HOST_ARCH"/Packages)
+    fi
+    if [ -z "$section" ] ; then
+      section=$(egrep -e "^$bin Section " override.bin | cut -d ' ' -f 3)
+    fi
+  else
+    section=$(awk -v pkg="$src" 'BEGIN { package_found = 0 }
+/^Package:/ { if ($2 == pkg) package_found = 1 }
+/^Section:/ { if (package_found == 1) { print $2; exit; } }' \
+"$MIRRORLOCAL"/dists/"$ucodename"/*/source/Sources)
+    if [ -z "$section" ] ; then
+      section=$(egrep -e "^$src Section " override.src | cut -d ' ' -f 3)
+    fi
+  fi
+  
+  echo "$section"
+}
+
+add_src_to_purge(){
+	# Find all package names (binary and source) for a given source package
+	# and add each of those to the purge file.
+	local srcpkg="$1"
+	local purgefile="$2"
+	local repopath="$3"
+	
+	for dir in "$repopath"/pool/*/*/"$srcpkg" ; do
+		for binpkg in $(ls "$dir" | cut -d '_' -f 1) ; do
+			echo $binpkg purge >> "$purgefile"
+		done
+	done
+}
+
+set_purge(){
+	# Create a purge file to avoid updating our repo with packages we
+	# don't want.
+	local purgefile="$REPODST"/conf/purge-"$MIRRORDIST"
+	cat /dev/null > "$purgefile"
+	
+	# Purge blacklist.
+	for pkg in `cat packages-to-remove`; do
+			#echo "$pkg" purge >> "$purgefile"
+			add_src_to_purge "$pkg" "$purgefile" "$MIRRORLOCAL"
+	done
+	
+	# Purge packages that we have in VCS.
+	for pkgdir in packages/"$RELEASE"/* ; do
+		if [ -d "$pkgdir" ] ; then
+			#echo $(basename "$pkgdir") purge >> "$purgefile"
+			local pkg=$(basename "$pkgdir")
+			add_src_to_purge "$pkg" "$purgefile" "$MIRRORLOCAL"
+		fi
+	done
+	
+	# Reprepro doesn't allow duplicates.
+	cat "$purgefile" | sort | uniq > "$purgefile".tmp
+	mv "$purgefile".tmp "$purgefile"
+}
+
+set_sections(){
+  local codename=$1
+  local src=$2 # Source package name
+  local bin=$3 # Binary package name (optional)
+  
+  local section=''
+  local binaries=''
+  
+  section=$(get_section "$codename" "$src")
+  if [ -n "$section" ] ; then
+    echo "$src" Section "$section" >> "$REPODST"/conf/override."$codename".src
+  fi
+  
+  binaries=$(get_binaries "$codename" "$src")
+  for b in $binaries ; do
+    section=$(get_section "$codename" "$src" "$b")
+    if [ -n "$section" ] ; then
+      echo "$b" Section "$section" >> "$REPODST"/conf/override."$codename".bin
+    fi
+  done
+}
+
+remove_sourceless(){
+	local pkg=$1
+	local codename=$2
+	
+	# Find versions of binary and source packages.
+	# Binaries are debs or udebs. They either have the same name as the
+	# source or refer to the source.
+	# listfilter output = release|component|type: name version
+	local deb_versions=$(reprepro -Vb $REPODST -T deb listfilter $codename \
+"Source (==$pkg) | Package (==$pkg)" | cut -d " " -f 3 | sort | uniq)
+	local udeb_versions=$(reprepro -Vb $REPODST -T udeb listfilter $codename \
+"Source (==$pkg) | Package (==$pkg)" | cut -d " " -f 3 | sort | uniq)
+	local bin_versions=$(echo $deb_versions $udeb_versions | sort | uniq)
+	local src_versions=$(reprepro -Vb $REPODST -T dsc listfilter $codename \
+"Package (==$pkg)" | cut -d " " -f 3 | sort | uniq)
+	
+	# If a binary version has no source counterpart then delete all
+	# binaries of that version.
+	for bv in $bin_versions ; do
+		local found=""
+		for sv in $src_versions ; do
+			if [ "$bv" = "$sv" ] ; then
+				found=$bv
+				break
+			fi
+		done
+		if [ -z "$found" ] ; then
+			reprepro -Vb $REPODST -T deb removefilter $codename \
+"Version (==$bv), (Source (==$pkg) | Package (==$pkg) )"
+			reprepro -Vb $REPODST -T udeb removefilter $codename \
+"Version (==$bv), (Source (==$pkg) | Package (==$pkg) )"
+		fi
+	done
+}
+
+ensure_updated() {
+	# Parameters:
+	# $1 Upstream source package name
+	# $2 Our source package name
+	# $3 Release
+	# $4 Build script
+	# $5 Version in ./config.local
+
+  set_sections "$3" "$2"
+
+	# What version of this package do upstream have in our Sources file?
+	UPSTREAM_VERSION=$(discover_version $1 $MIRRORLOCAL $MIRRORDIST $distro_release) ||true
+
+	# What version of this package do we have in our Sources file?
+	OUR_VERSION=$(discover_version $2 $REPODST $BASE_RELEASE $distro_release |grep $DISTRONAME_L) ||true
+
+	# If we are doing packages in -updates, and have a "non-existent" package, try -security
+	if [ -z "$OUR_VERSION" -a "$distro_release" == "-updates" ]; then
+		# Try to find a version in -security
+		OUR_VERSION=$(discover_version $2 $REPODST $BASE_RELEASE "-security" |grep $DISTRONAME_L) ||true
+
+		# If OUR_VERSION is no longer empty (eg, its in -security)
+		if [ -n $OUR_VERSION ]; then
+			# Remove the version from -updates, since its probably non-free upstream stuff
+			reprepro -Vb $REPODST removesrc $RELEASE$distro_release $1
+		fi
+	fi
+
+	# If the version in backports is the same as in updates, remove from backports.
+	# We do this because reprepro can't handle adding binaries that already exist.
+	if [ "$distro_release" == "-backports" ] ; then
+		BP_VERSION=$(discover_version $2 $REPODST $BASE_RELEASE $distro_release) ||true
+		UPD_VERSION=$(discover_version $2 $REPODST $BASE_RELEASE "-updates" | grep $DISTRONAME_L) ||true
+		UPD_VERSION=${UPD_VERSION%$DISTRONAME_L*}
+		if [ "$UPD_VERSION" == "$BP_VERSION" ] ; then
+			reprepro -Vb $REPODST removesrc $RELEASE$distro_release $1
+			return 0
+		fi
+	fi
+
+	# Find $DISTRONAME_L in $OUR_VERSION and delete everything to its left
+	CURRENT_VERSION=${OUR_VERSION#*$DISTRONAME_L}
+
+	if [ -n "$UPSTREAM_VERSION" ]; then # We have something to build from
+		# We haven't built yet, or are out of date
+		if [ -z "$OUR_VERSION" ] || dpkg --compare-versions $UPSTREAM_VERSION gt $OUR_VERSION; then 
+			add_package "$2" "$5" "$UPSTREAM_VERSION" "$3" "$4"
+		elif [ -n "$CURRENT_VERSION" ]; then
+			# Has the version in the config file changed?
+			if [ "$CURRENT_VERSION" -lt "$5" ]; then
+				add_package "$2" "$5" "$UPSTREAM_VERSION" "$3" "$4"
+			fi
+		fi
+	fi
+	
+	remove_sourceless $1 $RELEASE$distro_release
+}
+
+add_package() {
+	# Parameters:
+	# $1 Our source name
+	# $2 Version in ./config
+	# $3 Upstream version
+	# $4 Release
+	# $5 Build script
+
+	# Does this release of this distribution have this source package?
+	OUR_SOURCE=$(discover_version $1 $REPODST $BASE_RELEASE $distro_release |grep $DISTRONAME_L$2) ||true
+
+	if [ -z "$OUR_SOURCE" ]; then  # If we don't have this version, build it
+		# Build it
+		if [ 1 == "$DONT_CHROOT" ]; then
+			# Some things need to manipulate the repo itself
+			CHROOTDIR=$CHROOTDIR RELEASE=$4 VERSION="=$3" $5 || exit 1
+		else
+			chroot $CHROOTDIR bash -c "cd /builder && RELEASE=$4 VERSION='=$3' $CCACHE_PREFS $5" || exit 1
+			reprepro --ignore=missingfile -Vb $REPODST include $4 $CHROOTDIR/$WORKINGDIR/*.changes
+		fi
+	fi
+}
+
+if [ $USECCACHE -eq 1 ]; then
+	CCACHE_PREFS="CCACHE_DIR=/var/lib/ccache PATH=/usr/lib/ccache:$PATH"
+fi
+
+REDO=1
+while [ $REDO -eq 1 ]; do	# If versions in the config change, we could need to redo the lot
+	REDO=0
+	
+	set_purge
+	reprepro --noskipold -V -b $REPODST update || { echo "Repository update failed"; exit 1; }
+
+	# Non-Free, or no valid use.
+	for pkg in `cat packages-to-remove`; do
+		for postfix in '' -security $EXTRAS; do
+			reprepro -Vb $REPODST removesrc $RELEASE$postfix $pkg
+		done
+	done
+	
+	# We don't want packages from upstream which we keep in VCS ourselves.
+	# Assumption: every VCS package is always at least in the base pocket.
+	for pkgdir in packages/"$RELEASE"/* ; do
+		if [ -d "$pkgdir" ] ; then
+			# Package is in VCS.
+			pkg=$(basename "$pkgdir")
+			UPSTREAM_VERSION=$(discover_version "$pkg" "$MIRRORLOCAL" "$MIRRORDIST" "")
+			if [ -n "$UPSTREAM_VERSION" ] ; then
+				# Package exists upstream.
+				for distro_release in '' -security $EXTRAS ; do
+					# Peek in every pocket so that this does what it's supposed to
+					# when a new pocket is added after initial setup.
+					# FIXME: there could be multiple versions in one pocket. This only
+					# deletes one version at a time. So if a package gets added to
+					# VCS after initial setup it may take a few runs before all
+					# upstream packages are gone.
+					OUR_VERSION=$(discover_version "$pkg" "$REPODST" "$RELEASE" "$distro_release")
+					if [[ ! "$OUR_VERSION" =~ "${DISTRONAME_L}"[0-9]+$ ]] ; then
+						# We still carry the upstream version.
+						reprepro -Vb "$REPODST" removesrc "$RELEASE""$distro_release" "$pkg"
+					fi
+				done
+			fi
+		fi
+	done
+	
+	for distro_release in '' -security $EXTRAS; do
+		./update-chroot $distro_release
+
+		CHROOTDIR=$WORKINGDIR/$MIRRORDIST$distro_release-$GNS_HOST_ARCH
+
+    # Regenerate overrides on every run.
+    for type in src bin; do
+      OVERRIDE_FILE="$REPODST"/conf/override."$RELEASE""$distro_release"."$type"
+      rm -f "$OVERRIDE_FILE"
+      touch "$OVERRIDE_FILE"
+    done
+
+		# General
+		# ensure_updated srcname gnssrcname 
+		ensure_updated apt apt $RELEASE$distro_release ./gen-apt $APT_VERSION
+		ensure_updated audacity audacity $RELEASE$distro_release ./gen-audacity $AUDACITY_VERSION
+		ensure_updated blender blender $RELEASE$distro_release ./gen-blender $BLENDER_VERSION
+		ensure_updated bogofilter bogofilter $RELEASE$distro_release ./gen-bogofilter $BOGOFILTER_VERSION
+		ensure_updated cia-clients cia-clients $RELEASE$distro_release ./gen-cia-clients $CIA_SCRIPTS_VERSION
+		ensure_updated base-files base-files $RELEASE$distro_release ./gen-base-files $BASE_FILES_VERSION
+		ensure_updated example-content example-content $RELEASE$distro_release ./gen-example-content $EXAMPLE_CONTENT_VERSION
+		ensure_updated launchpad-integration launchpad-integration $RELEASE$distro_release ./gen-launchpad-integration $LAUNCHPAD_INTEGRATION_VERSION
+		ensure_updated liferea liferea $RELEASE$distro_release ./gen-liferea $LIFEREA_VERSION
+		ensure_updated linux linux $RELEASE$distro_release ./gen-linux $KERNEL_VERSION
+		ensure_updated linux-ubuntu-modules-$KERNEL_RELEASE linux-ubuntu-modules-$KERNEL_RELEASE $RELEASE$distro_release ./gen-linux-ubuntu-modules $LINUX_UBUNTU_MODULES_VERSION
+		ensure_updated mesa mesa $RELEASE$distro_release ./gen-mesa $MESA_VERSION
+		ensure_updated module-init-tools module-init-tools $RELEASE$distro_release ./gen-module-init-tools $MODULE_INIT_TOOLS_VERSION
+		ensure_updated psutils psutils $RELEASE$distro_release ./gen-psutils $PSUTILS_VERSION
+		ensure_updated python-apt python-apt $RELEASE$distro_release ./gen-python-apt $PYTHON_APT_VERSION
+		ensure_updated seamonkey seamonkey $RELEASE$distro_release ./gen-seamonkey $SEAMONKEY_VERSION
+		ensure_updated texlive-base texlive-base $RELEASE$distro_release ./gen-texlive-base $TEXLIVE_BASE_VERSION
+		ensure_updated texlive-bin texlive-bin $RELEASE$distro_release ./gen-texlive-bin $TEXLIVE_BASE_VERSION
+		ensure_updated texlive-extra texlive-extra $RELEASE$distro_release ./gen-texlive-extra $TEXLIVE_EXTRA_VERSION
+		ensure_updated thunderbird thunderbird $RELEASE$distro_release ./gen-thunderbird $THUNDERBIRD_VERSION
+		ensure_updated ubiquity ubiquity $RELEASE$distro_release ./gen-ubiquity $UBIQUITY_VERSION
+		ensure_updated vlc vlc $RELEASE$distro_release ./gen-vlc $VLC_VERSION
+		ensure_updated xchat xchat $RELEASE$distro_release ./gen-xchat $XCHAT_VERSION
+
+		# Gnome
+		ensure_updated app-install-data-ubuntu app-install-data-ubuntu $RELEASE$distro_release ./gen-app-install-data-ubuntu $APP_INSTALL_DATA_UBUNTU_VERSION
+		ensure_updated epiphany-browser epiphany-browser $RELEASE$distro_release ./gen-epiphany-browser $EPIPHANY_BROWSER_VERSION
+		ensure_updated gnome-desktop gnome-desktop $RELEASE$distro_release ./gen-gnome-desktop $GNOME_DESKTOP_VERSION
+		ensure_updated gnome-icon-theme gnome-icon-theme $RELEASE$distro_release ./gen-gnome-icon-theme $GNOME_ICON_THEME_VERSION
+		ensure_updated gnome-panel gnome-panel $RELEASE$distro_release ./gen-gnome-panel $GNOME_PANEL_VERSION
+		ensure_updated human-icon-theme human-icon-theme $RELEASE$distro_release ./gen-human-icon-theme $HUMAN_ICON_THEME_VERSION
+		ensure_updated human-theme human-theme $RELEASE$distro_release ./gen-human-theme $HUMAN_THEME_VERSION
+		ensure_updated tangerine-icon-theme tangerine-icon-theme $RELEASE$distro_release ./gen-tangerine-icon-theme $TANGERINE_ICON_THEME_VERSION
+		ensure_updated ubuntu-artwork $DISTRONAME_L-artwork $RELEASE$distro_release ./gen-artwork $ARTWORK_VERSION
+		ensure_updated ubuntu-meta $DISTRONAME_L-meta $RELEASE$distro_release ./gen-meta $META_VERSION
+		ensure_updated yelp yelp $RELEASE$distro_release ./gen-yelp $YELP_VERSION
+
+		# KDE
+		ensure_updated kdebase kdebase $RELEASE$distro_release ./gen-kdebase $KDEBASE_VERSION
+		# kdelibs doesn't build (g++ "internal error", see logs 2012-12-31).
+		#ensure_updated kdelibs kdelibs $RELEASE$distro_release ./gen-kdelibs $KDELIBS_VERSION
+		ensure_updated kde4libs kde4libs $RELEASE$distro_release ./gen-kde4libs $KDE4LIBS_VERSION
+		# ensure_updated kubuntu-default-settings k$DISTRONAME_L-default-settings $RELEASE$distro_release ./gen-kdefault-settings $KDEFAULT_SETTINGS_VERSION
+		# ensure_updated kubuntu-meta k$DISTRONAME_L-desktop $RELEASE$distro_release ./gen-kmeta $KMETA_VERSION
+
+		# User-defined packages
+		if [ -d packages/$RELEASE$distro_release ]; then
+			for PKG in packages/$RELEASE$distro_release/*; do
+				PKGNAME=${PKG##*/}
+				PKG_VERSION=$(sed '1{s/.*(\(.*\)).*/\1/;q}' $PKG/debian/changelog)
+				REPO_VERSION=$(reprepro -b $REPODST -T deb list $RELEASE$distro_release $PKGNAME | cut -f 3 -d ' ' |head -n 1 ) || true
+				if [ -z "$REPO_VERSION" ] || dpkg --compare-versions $PKG_VERSION gt $REPO_VERSION; then
+					rm -rf $CHROOTDIR/$WORKINGDIR
+					mkdir -p $CHROOTDIR/$WORKINGDIR
+					cp -r $PKG $CHROOTDIR/$WORKINGDIR
+					# What are the packages build-deps?
+					PKG_BUILD_DEPS=$(chroot $CHROOTDIR bash -c "cd $WORKINGDIR/$PKGNAME && dpkg-checkbuilddeps 2>&1 |sed -e 's/ *([^)]*)//g' | cut -d ' ' -f 5-")
+					chroot $CHROOTDIR bash -c "cd $WORKINGDIR/$PKGNAME && apt-get -y install $PKG_BUILD_DEPS"
+					chroot $CHROOTDIR bash -c "cd $WORKINGDIR/$PKGNAME && $CCACHE_PREFS dpkg-buildpackage $DPKGOPTS"
+					reprepro -Vb $REPODST include $RELEASE$distro_release $CHROOTDIR/$WORKINGDIR/*.changes
+				fi
+			done
+		fi
+
+	done
+done
+
+# Extra meta packages
+./gen-emeta
+
+# Unset BUILDARCH so it won't contaminate future runs
+unset BUILDARCH
+unset MAINTINFO
+unset DPKGOPTS
+
+echo "do-update completed"
+

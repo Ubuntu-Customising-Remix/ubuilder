@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Brian Brazil
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+rm -rf $WORKINGDIR/builder
+mkdir -p $WORKINGDIR/builder
+cd $WORKINGDIR/builder
+
+mkdir -p builder/debian
+cd builder
+
+bzr branch http://bzr.savannah.nongnu.org/r/gnewsense/builder builder
+VERSION=$(bzr revo builder)
+find builder -name .bzr -print0 | xargs -0 rm -rf
+EDITOR=true dch --create --package builder -v $VERSION-$BUILDER_VERSION "Automatically generated"
+sed -i "/XXXXXX/d;s/UNRELEASED/$RELEASE/" debian/changelog
+
+cat > debian/control <<EOF
+Source: builder
+Section: admin
+Priority: extra
+Maintainer: $MAINTINFO
+Standards-Version: 0.0.0
+
+Package: builder
+Architecture: all
+Depends: 
+Priority: extra
+Description: gNewSense distribution builder
+ This package contains the tools need to create a GNU/Linux
+ distribution based off Ubuntu
+EOF
+
+cat > debian/rules <<EOF
+#!/usr/bin/make -f
+clean:
+build:
+	touch build
+binary: build
+	dh_installchangelogs
+	dh_install builder usr/share
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+EOF
+chmod 755 debian/rules
+
+
+dpkg-buildpackage $DPKGOPTS
+cd ..
+reprepro -Vb $REPODST include $RELEASE builder*.changes
+

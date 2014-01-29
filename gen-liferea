@@ -1,0 +1,141 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Brian Brazil
+#    Copyright (C) 2011  Sam Geeraerts
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source liferea$VERSION
+apt-get --yes build-dep liferea$VERSION
+cd liferea-*
+
+cat <<HERE > debian/patches/nonfsdg-browsers.dpatch
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## nonfsdg-browsers.dpatch by Sam Geeraerts <samgee@elmundolibre.be>
+##
+## DP: Remove non-free browsers from preferences.
+
+@DPATCH@
+diff -urNad liferea-1.4.14~/liferea.schemas liferea-1.4.14/liferea.schemas
+--- liferea-1.4.14~/liferea.schemas	2007-07-23 19:56:59.000000000 +0200
++++ liferea-1.4.14/liferea.schemas	2011-07-15 14:37:26.000000000 +0200
+@@ -47,7 +47,7 @@
+       <applyto>/apps/liferea/browser</applyto>
+       <owner>liferea</owner>
+       <type>string</type>
+-      <default>mozilla %s</default>
++      <default>epiphany-browser %s</default>
+       <locale name="C">
+         <short>Selects the browser command to use when browser_module
+ 	   is set to manual</short>
+@@ -64,8 +64,8 @@
+       <locale name="C">
+         <short>Selects which browser to use to open external links</short>
+         <long>Selects which browser to use to open external
+-	   links. The choices include "gnome", "mozilla", "firefox",
+-	   "netscape", "opera", "konqueror", and "manual". </long>
++	   links. The choices include "gnome", "epiphany", "icecat",
++	   and "manual".</long>
+       </locale>
+     </schema>
+     <schema>
+diff -urNad liferea-1.4.14~/src/conf.h liferea-1.4.14/src/conf.h
+--- liferea-1.4.14~/src/conf.h	2007-08-20 22:57:05.000000000 +0200
++++ liferea-1.4.14/src/conf.h	2011-07-15 14:37:42.000000000 +0200
+@@ -32,7 +32,7 @@
+ #define BROWSER_COMMAND			"/apps/liferea/browser"
+ 
+ #define GNOME_DEFAULT_BROWSER_COMMAND	"gnome-open '%s'"
+-#define DEFAULT_BROWSER_COMMAND		"mozilla '%s'"
++#define DEFAULT_BROWSER_COMMAND		"epiphany-browser '%s'"
+ 
+ #define DEFAULT_FONT			"/desktop/gnome/interface/document_font_name"
+ #define USER_FONT			"/apps/liferea/browser-font"
+diff -urNad liferea-1.4.14~/src/ui/ui_prefs.c liferea-1.4.14/src/ui/ui_prefs.c
+--- liferea-1.4.14~/src/ui/ui_prefs.c	2011-07-15 14:34:44.000000000 +0200
++++ liferea-1.4.14/src/ui/ui_prefs.c	2011-07-15 14:36:13.000000000 +0200
+@@ -75,37 +75,13 @@
+ 		FALSE
+ 	},
+ 	{
+-		/* tested with SeaMonkey 1.0.6 */
+-		"mozilla", "Mozilla", "mozilla %s",
+-		NULL, "mozilla -remote openURL(%s)",
+-		NULL, "mozillax -remote 'openURL(%s,new-window)'",
+-		NULL, "mozilla -remote 'openURL(%s,new-tab)'",
+-		FALSE
+-	},
+-	{
+-		/* tested with Firefox 1.5 and 2.0 */
+-		"firefox", "Firefox","firefox \"%s\"",
+-		NULL, "firefox -a firefox -remote \"openURL(%s)\"",
+-		NULL, "firefox -a firefox -remote 'openURL(%s,new-window)'",
+-		NULL, "firefox -a firefox -remote 'openURL(%s,new-tab)'",
+-		TRUE
+-	},
+-	{
+-		/* tested with Netscape 4.76 */
+-		"netscape", "Netscape", "netscape \"%s\"",
+-		NULL, "netscape -remote \"openURL(%s)\"",
+-		NULL, "netscape -remote \"openURL(%s,new-window)\"",
+-		NULL, NULL,
++		"icecat", "IceCat","icecat \"%s\"",
++		NULL, "icecat -a icecat -remote \"openURL(%s)\"",
++		NULL, "icecat -a icecat -remote 'openURL(%s,new-window)'",
++		NULL, "icecat -a icecat -remote 'openURL(%s,new-tab)'",
+ 		TRUE
+ 	},
+ 	{
+-		"opera", "Opera","opera \"%s\"",
+-		"opera \"%s\"", "opera -remote \"openURL(%s)\"",
+-		"opera -newwindow \"%s\"", NULL,
+-		"opera -newpage \"%s\"", NULL,
+-		FALSE
+-	},
+-	{
+ 		"epiphany", "Epiphany","epiphany \"%s\"",
+ 		NULL, NULL,
+ 		"epiphany \"%s\"", NULL,
+@@ -113,13 +89,6 @@
+ 		FALSE
+ 	},
+ 	{
+-		"konqueror", "Konqueror", "kfmclient openURL \"%s\"",
+-		NULL, NULL,
+-		NULL, NULL,
+-		NULL, NULL,
+-		FALSE
+-	},
+-	{
+ 		"x-www-browser", "x-www-browser", "x-www-browser \"%s\"",
+ 		NULL, NULL,
+ 		NULL, NULL,
+
+@DPATCH@
+HERE
+
+echo nonfsdg-browsers >> debian/patches/00list
+
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${LIFEREA_VERSION}'#p' debian/changelog)  "Remove non-FSDG browsers from preferences."
+
+dpkg-buildpackage $DPKGOPTS

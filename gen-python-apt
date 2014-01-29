@@ -1,0 +1,99 @@
+#!/bin/bash
+#
+#    Copyright (C) 2008 Brian Brazil
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+IMGDIR=$PWD/images
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source python-apt$VERSION
+apt-get --yes build-dep python-apt$VERSION
+apt-get --yes install iso-codes
+cd python-apt-*
+
+sed -i "s#\.ubuntu\.com/ubuntu#.$DOMAIN/$DISTRONAME_L#" aptsources/distro.py
+sed -i "s/\.ubuntu\.com/.$DOMAIN/;" aptsources/distro.py
+sed -i "s/id == \"Ubuntu\"/id == \"$DISTRONAME\"/;" aptsources/distro.py
+
+cat <<EOF > data/templates/$DISTRONAME.info.in
+_ChangelogURI: http://changelogs.$DOMAIN/changelogs/pool/%s/%s/%s/%s_%
+s/changelog
+
+Suite: $BASE_RELEASE
+RepositoryType: deb
+BaseURI: http://archive.$DOMAIN/$DISTRONAME_L/
+MatchURI: archive.$DOMAIN/$DISTRONAME_L
+MirrorsFile: /usr/share/python-apt/templates/$DISTRONAME.mirrors
+_Description: $DISTRONAME "$BASE_RELEASE"
+Component: main
+_CompDescription: Main supported software
+_CompDescriptionLong: Core software
+Component: universe
+_CompDescription: Other useful software
+_CompDescriptionLong: Non-core useful software
+
+Suite: $BASE_RELEASE-security
+ParentSuite: $BASE_RELEASE
+RepositoryType: deb
+BaseURI: http://security.$DOMAIN/$DISTRONAME_L/
+MatchURI: archive.$DOMAIN/$DISTRONAME_L|security.$DOMAIN
+_Description: Important security updates
+
+EOF
+
+if [ "$UPDATES" = 1 ]; then
+	cat <<EOF >> data/templates/$DISTRONAME.info.in
+Suite: $BASE_RELEASE-updates
+ParentSuite: $BASE_RELEASE
+RepositoryType: deb
+BaseURI: http://archive.$DOMAIN/$DISTRONAME_L/
+MatchURI: archive.$DOMAIN/$DISTRONAME_L
+_Description: Unsupported updates
+
+EOF
+fi
+
+if [ "$BACKPORTS" = 1 ]; then
+	cat <<EOF >> data/templates/$DISTRONAME.info.in
+Suite: $BASE_RELEASE-backports
+ParentSuite: $BASE_RELEASE
+RepositoryType: deb
+BaseURI: http://archive.$DOMAIN/$DISTRONAME_L/
+MatchURI: archive.$DOMAIN/$DISTRONAME_L
+_Description: Package Backports
+
+EOF
+fi
+
+if [ -f $IMGDIR/$DISTRONAME_L-extra-python-apt ]; then
+	cat $IMGDIR/$DISTRONAME_L-extra-python-apt >> data/templates/$DISTRONAME.info.in
+fi
+
+echo > data/templates/$DISTRONAME.mirrors
+for c in $(awk '{print $1}' /usr/share/iso-codes/iso_3166.tab); do
+	echo "#LOC:$c" >> data/templates/$DISTRONAME.mirrors
+	echo "http://$(tr A-Z a-z <<<$c).archive.$DOMAIN/$DISTRONAME_L/" >> data/templates/$DISTRONAME.mirrors
+done
+
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${PYTHON_APT_VERSION}'#p' debian/changelog) "Changed for $DISTRONAME"
+
+dpkg-buildpackage $DPKGOPTS

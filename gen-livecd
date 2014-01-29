@@ -1,0 +1,205 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006 - 2009  Brian Brazil
+#    Copyright (C) 2009  Karl Goetz
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+# Took commands from the debian-live project in July 2006
+# It carried the following notice:
+#
+# Copyright (C) 2006 Daniel Baumann <daniel@debian.org>
+# Copyright (C) 2006 Marco Amadori <marco.amadori@gmail.com>
+#
+# make-live comes with ABSOLUTELY NO WARRANTY; for details see COPYING.
+# This is free software, and you are welcome to redistribute it
+# under certain conditions; see COPYING for details.
+
+
+
+. config
+
+if [ $UID != 0 ]; then
+	echo 'This script must be run as root'
+	exit 1
+fi
+
+BASEDIR=`pwd`
+LIVECDNAME=$DISTRONAME
+LIVECDNAME_L=$DISTRONAME_L
+
+# Check if the cd build chroot /proc is mounted
+# If mounted, unmount it
+if [[ -f $LIVECDDIR/chroot-$GNS_HOST_ARCH/proc/version ]]; then
+	umount $LIVECDDIR/chroot-$GNS_HOST_ARCH/proc
+fi
+
+# to create different variables for other Desktop Managers
+
+if [ -n "$1" ]; then
+	. livecd-variants/$DISTRONAME_L-$1.variables
+fi
+
+# Various possible customisations
+LIVECDUSERNAME=${LIVECDUSERNAME:-$RELEASE}
+LIVECD_ISO_PREFIX=${LIVECD_ISO_PREFIX:-$LIVECDNAME_L}
+
+rm -rf $LIVECDDIR
+mkdir -p $LIVECDDIR
+cd $LIVECDDIR 
+
+cp -r /usr/share/cdebootstrap .
+cat << EOF >> cdebootstrap/suites
+Suite: $RELEASE
+Config: $RELEASE
+EOF
+
+chroots ()
+{
+	# Execute commands in chroot
+	chroot ./chroot-$GNS_HOST_ARCH /usr/bin/env -i HOME=/root TERM=${TERM} \
+	PATH=/usr/sbin:/usr/bin:/sbin:/bin DEBIAN_PRIORITY=critical ${1}
+}
+cp -r cdebootstrap/generic/ cdebootstrap/$RELEASE
+cdebootstrap -v --allow-unauthenticated --keyring= --arch=$GNS_HOST_ARCH --flavour=minimal -c cdebootstrap/ $RELEASE chroot-$GNS_HOST_ARCH $REPOAPT
+# Now have full chroot
+
+mkdir -p cdroot-$GNS_HOST_ARCH/image/casper/
+
+cat << EOF > chroot-$GNS_HOST_ARCH/etc/apt/sources.list
+deb $REPOAPT $RELEASE main universe
+# deb-src $REPOAPT $RELEASE main universe
+deb $REPOAPT $RELEASE-security main universe
+# deb-src $REPOAPT $RELEASE-security main universe
+EOF
+# Used by gen-cdsource
+cp chroot-$GNS_HOST_ARCH/etc/apt/sources.list sources.list
+
+trap "umount -f $PWD/chroot-$GNS_HOST_ARCH/proc" ERR INT TERM
+mount -t proc proc ./chroot-$GNS_HOST_ARCH/proc
+
+chroots "apt-get update"
+chroots "apt-get install --yes --force-yes gnupg"
+gpg -a --export $SIGNINGKEY | chroots "apt-key add -"
+chroots "apt-get update"
+
+echo "do_initrd = Yes" > chroot-$GNS_HOST_ARCH/etc/kernel-img.conf
+chroots "apt-get install --yes syslinux linux-image-generic casper udev debconf-utils"
+
+# Hack
+sed -i -e "s#USERNAME=.*#USERNAME=$LIVECDUSERNAME#;" \
+	-e "s#USERFULLNAME=.*#USERFULLNAME='$LIVECDNAME LiveCD user'#;" \
+	-e "s#HOST=.*#HOST=$LIVECDNAME_L#;" \
+	-e "s#BUILD_SYSTEM=.*#BUILD_SYSTEM=Builder#;" \
+	chroot-$GNS_HOST_ARCH/etc/casper.conf
+# Add NOPASSWD so livecd user doesn't see password prompts
+sed -i -e "s/Ubuntu/Builder/" chroot-$GNS_HOST_ARCH/usr/share/initramfs-tools/scripts/casper-bottom/10adduser
+
+chroots "dpkg-reconfigure `basename chroot-$GNS_HOST_ARCH/var/lib/dpkg/info/linux-image-2.6.*.postinst .postinst`"
+
+# Preseed some values
+cat <<EOF | chroots debconf-set-selections
+ubiquity        debian-installer/country        string IE
+ubiquity        debian-installer/language       string en_IE:en
+ubiquity        debian-installer/keymap         string gb
+ubiquity        time/zone                       select Europe/Dublin
+xserver-xorg    xserver-xorg/config/inputdevice/keyboard/layout string gb
+EOF
+
+# General software
+chroots "apt-get install --yes ${DISTRONAME_L}-minimal ${DISTRONAME_L}-standard"
+# This needs 'special' attention to avoid a critical debconf question
+chroots "apt-get install --yes dictionaries-common"
+chroots "apt-get install --yes ${LIVECDNAME_L}-desktop"
+# ubiquity uses these to control what packages on the LiveCD are installed on the target system
+# Install any pacakges you want installed on the target system before this line
+chroots "dpkg --get-selections" | sed -ne 's/\t\t*install$//p' | sort > ./cdroot-$GNS_HOST_ARCH/image/casper/filesystem.manifest-desktop
+
+chroots "apt-get install --yes ${LIVECD_EXTRAS}"
+chroots "dpkg --get-selections" | sed -ne 's/\t\t*install$//p' | sort > ./cdroot-$GNS_HOST_ARCH/image/casper/filesystem.manifest
+# Provide a default package list for users.
+chroots "dpkg --get-selections > ./cdroot-$GNS_HOST_ARCH/root/default-package-selection"
+
+chroots "apt-get clean"
+cat << EOF > chroot-$GNS_HOST_ARCH/etc/apt/sources.list
+# From gen-livecd
+deb http://archive.$DOMAIN/$DISTRONAME_L/ $RELEASE main universe
+deb-src http://archive.$DOMAIN/$DISTRONAME_L/ $RELEASE main universe
+deb http://security.$DOMAIN/$DISTRONAME_L/ $RELEASE-security main universe
+deb-src http://security.$DOMAIN/$DISTRONAME_L/ $RELEASE-security main universe
+EOF
+
+chroots /etc/cron.daily/mlocate 
+
+# Fix problem with NPTL not being detected
+rm -f chroot-$GNS_HOST_ARCH/etc/ld.so.nohwcap
+
+# Enable daemons
+chroots "dpkg -P cdebootstrap-helper-diverts"
+
+# Do anything needed with the filesystem above this line
+umount $PWD/chroot-$GNS_HOST_ARCH/proc
+
+mkdir -p cdroot-$GNS_HOST_ARCH/image/casper
+rm -f cdroot-$GNS_HOST_ARCH/image/casper/filesystem.squashfs
+mksquashfs chroot-$GNS_HOST_ARCH cdroot-$GNS_HOST_ARCH/image/casper/filesystem.squashfs
+
+mkdir -p cdroot-$GNS_HOST_ARCH/image/isolinux
+cp chroot-$GNS_HOST_ARCH/usr/lib/syslinux/isolinux.bin cdroot-$GNS_HOST_ARCH/image/isolinux
+
+echo "$LIVECD_VERSION ($LIVECDNAME $GNS_HOST_ARCH $RELEASE)" > cdroot-$GNS_HOST_ARCH/image/LIVECD_VERSION
+cat <<EOF > cdroot-$GNS_HOST_ARCH/image/README
+$DISTRONAME - $TAGLINE
+
+This is a $LIVECDNAME LiveCD and installer for the $DISTRONAME GNU/Linux
+distribution. More information about $DISTRONAME can be found on our 
+website at http://www.$DOMAIN/
+
+This LiveCD was generated with the gNewSense Builder.
+EOF
+
+# Get the bootsplash etc. for syslinux
+cp -a $BASEDIR/syslinux/isolinux.{cfg,txt} cdroot-$GNS_HOST_ARCH/image/isolinux
+for i in $BASEDIR/syslinux/f*.txt; do
+	sed "s/DISTRONAME/$DISTRONAME/g;
+	s/LIVECDNAME/$LIVECDNAME/g;
+	s/RELEASE/$RELEASE/g;
+	s/LIVECD_VERSION/$LIVECD_VERSION/g;
+	s/DOMAIN/$DOMAIN/g;
+	s/LIVE_DATE/`date +%Y%m%d`/g;
+	" $i > cdroot-$GNS_HOST_ARCH/image/isolinux/`basename $i`
+done
+convert -size 640x320 xc:black -fill $LOGO_COLOUR -gravity SouthWest -draw "text 2,2 '$DISTRONAME $LIVECD_VERSION ($RELEASE) LiveCD $GNS_HOST_ARCH'" -pointsize 24 -gravity Center -draw "text 30,50 '$TAGLINE'" -pointsize 72 -draw "text 0,0 '$LIVECDNAME'" -colors 10 cdroot-$GNS_HOST_ARCH/image/isolinux/splash.pcx
+pcxtoppm < cdroot-$GNS_HOST_ARCH/image/isolinux/splash.pcx | ppmtolss16 "#dddddd=7" > cdroot-$GNS_HOST_ARCH/image/isolinux/splash.rle
+rm cdroot-$GNS_HOST_ARCH/image/isolinux/splash.pcx
+
+rm -f chroot-$GNS_HOST_ARCH/boot/*.bak
+cp chroot-$GNS_HOST_ARCH/boot/vmlinuz-* cdroot-$GNS_HOST_ARCH/image/isolinux/vmlinuz
+cp chroot-$GNS_HOST_ARCH/boot/initrd.img-* cdroot-$GNS_HOST_ARCH/image/isolinux/initrd.gz
+cp chroot-$GNS_HOST_ARCH/boot/memtest86+.bin cdroot-$GNS_HOST_ARCH/image/isolinux/memtest
+
+mkisofs -o $REPODST/cdimage/$LIVECD_ISO_PREFIX-livecd-$RELEASE-$GNS_HOST_ARCH-$LIVECD_VERSION.iso -r -J -l \
+		-V "$LIVECDNAME LiveCD $LIVECD_VERSION $GNS_HOST_ARCH" -b isolinux/isolinux.bin \
+		-c isolinux/boot.cat -no-emul-boot -boot-load-size 4 \
+		 -boot-info-table cdroot-$GNS_HOST_ARCH/image
+
+# Here we stage the cd image
+cd $REPODST/cdimage
+btmakemetafile.bittornado http://torrent.$DOMAIN:6969/announce --announce_list "$BITTORRENT_ANNOUNCE_LIST" $LIVECD_ISO_PREFIX-livecd-$RELEASE-$GNS_HOST_ARCH-$LIVECD_VERSION.iso
+sed -i "/ $LIVECD_ISO_PREFIX-livecd-$RELEASE-$GNS_HOST_ARCH-$LIVECD_VERSION.iso$/d" MD5SUMS || true	# Might not exist yet
+md5sum $LIVECD_ISO_PREFIX-livecd-$RELEASE-$GNS_HOST_ARCH-$LIVECD_VERSION.iso >> MD5SUMS
+sed -i "/ $LIVECD_ISO_PREFIX-livecd-$RELEASE-$GNS_HOST_ARCH-$LIVECD_VERSION.iso$/d" SHA256SUMS || true  # Might not exist yet
+sha256sum $LIVECD_ISO_PREFIX-livecd-$RELEASE-$GNS_HOST_ARCH-$LIVECD_VERSION.iso >> SHA256SUMS
+

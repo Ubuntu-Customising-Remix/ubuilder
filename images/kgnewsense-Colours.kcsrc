@@ -1,0 +1,27 @@
+[Color Scheme]
+Name=kgnewsenseColours
+activeBackground=107,142,35
+activeBlend=154,205,50
+activeForeground=255,255,255
+activeTitleBtnBg=245,245,220
+alternateBackground=238,238,209
+background=250,250,210
+buttonBackground=245,245,220
+buttonForeground=107,142,35
+contrast=6
+foreground=107,142,35
+frame=250,250,210
+handle=250,250,210
+inactiveBackground=205,205,180
+inactiveBlend=205,205,193
+inactiveForeground=139,139,122
+inactiveFrame=250,250,210
+inactiveHandle=250,250,210
+inactiveTitleBtnBg=238,238,209
+linkColor=154,205,50
+selectBackground=179,238,58
+selectForeground=255,255,255
+shadeSortColumn=true
+visitedLinkColor=107,142,35
+windowBackground=255,255,255
+windowForeground=107,142,35

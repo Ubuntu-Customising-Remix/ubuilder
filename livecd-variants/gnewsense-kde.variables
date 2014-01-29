@@ -1,0 +1,15 @@
+# Branding
+LIVECDNAME=${DISTRONAME}-KDE
+LIVECDNAME_L=${DISTRONAME_L}-kde
+LIVECDUSERNAME=${RELEASE}
+LIVECD_ISO_PREFIX=${DISTRONAME_L}-kde
+
+# For KDE artwork
+LOGO_COLOUR=OliveDrab
+
+# Package selection
+META_KDE_desktop_ADD="${DISTRONAME_L}-KDE-default-settings ${DISTRONAME_L}-KDE-artwork-usplash"
+META_KDE_desktop_REMOVE="ubuntu-docs kubuntu-docs kubuntu-artwork-usplash kubuntu-default-settings apport-qt"
+
+# Package versioning is still in the config{,.local} files
+

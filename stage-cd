@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Brian Brazil
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+# Puts the livecd image and source in place to be pushed
+
+
+. config
+
+# Tar up the source
+
+cd $LIVECDDIR-src/
+if [ -d  $DISTRONAME_L-cdsource-$RELEASE-$GNS_HOST_ARCH-$LIVECD_VERSION ]; then
+	tar -cf  $DISTRONAME_L-cdsource-$RELEASE-$GNS_HOST_ARCH-$LIVECD_VERSION.tar $DISTRONAME_L-cdsource-$RELEASE-$GNS_HOST_ARCH-$LIVECD_VERSION
+	cd $REPODST/cdimage
+	mv $LIVECDDIR-src/$DISTRONAME_L-cdsource-$RELEASE-$GNS_HOST_ARCH-$LIVECD_VERSION.tar .
+	sed -i "/ $DISTRONAME_L-cdsource-$RELEASE-$GNS_HOST_ARCH-$LIVECD_VERSION.tar$/d" MD5SUMS
+	md5sum $DISTRONAME_L-cdsource-$RELEASE-$GNS_HOST_ARCH-$LIVECD_VERSION.tar >> MD5SUMS
+	sed -i "/ $DISTRONAME_L-cdsource-$RELEASE-$GNS_HOST_ARCH-$LIVECD_VERSION.tar$/d" SHA256SUMS
+	sha256sum $DISTRONAME_L-cdsource-$RELEASE-$GNS_HOST_ARCH-$LIVECD_VERSION.tar >> SHA256SUMS
+fi
+cd $REPODST/cdimage
+gpg -u $SIGNINGKEY --clearsign MD5SUMS
+mv MD5SUMS.asc MD5SUMS.gpg

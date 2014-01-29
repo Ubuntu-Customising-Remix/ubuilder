@@ -1,0 +1,122 @@
+#!/bin/bash
+#
+#    Copyright (C) 2007  Karl Goetz, Brian Brazil
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+IMGDIR=$PWD/images
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source firefox$VERSION
+apt-get --yes build-dep firefox$VERSION
+cd firefox-*
+
+FIREFOX_NAME_L=$(tr A-Z a-z <<<"$FIREFOX_NAME")
+FIREFOX_LOGO_LETTER=${FIREFOX_NAME:0:1}
+
+
+# Images
+if [ -f $IMGDIR/$DISTRONAME_L-firefox.xpm ]; then
+	cp $IMGDIR/$DISTRONAME_L-firefox-small.xpm debian/firefox-small.xpm
+	cp $IMGDIR/$DISTRONAME_L-firefox.xpm	debian/firefox.xpm
+	cp $IMGDIR/$DISTRONAME_L-firefox.png	debian/firefox.png
+	cp $IMGDIR/$DISTRONAME_L-firefox-about.png	debian/about.png
+else	
+	convert -size 16x16 xc:transparent -fill Black -gravity Center -pointsize 20 -draw "text 0,0 '$FIREFOX_LOGO_LETTER'" -antialias debian/firefox-small.xpm
+	convert -size 48x48 xc:transparent -fill Black -gravity Center -pointsize 60 -draw "text 0,0 '$FIREFOX_LOGO_LETTER'" -antialias debian/firefox.xpm
+	convert -size 64x64 xc:transparent -fill Black -gravity Center -pointsize 80 -draw "text 0,0 '$FIREFOX_LOGO_LETTER'" -antialias debian/firefox.png
+	convert -size 300x236 xc:transparent -fill White -gravity NorthWest -draw "rectangle 0,0 300,190" -fill Black -gravity North -pointsize 100 -draw "text 0,0 '$FIREFOX_LOGO_LETTER' " \
+	-pointsize 50 -draw "text 0,120 '$FIREFOX_NAME'" debian/about.png
+fi
+
+uuencode debian/firefox.png firefox.png > debian/firefox.png.uu
+uuencode debian/about.png about.png > debian/about.png.uu
+rm debian/about.png debian/firefox.png
+
+
+sed -i -e "s/MOZ_APP_DISPLAYNAME=Firefox/MOZ_APP_DISPLAYNAME=$FIREFOX_NAME/g" ./configure
+sed -i -e "s/MOZ_APP_DISPLAYNAME=Firefox/MOZ_APP_DISPLAYNAME=$FIREFOX_NAME/g" ./configure.in
+
+# Pull in bookmarks
+if [ -f $IMGDIR/$DISTRONAME_L-firefox-bookmarks.html ]; then
+	cp $IMGDIR/$DISTRONAME_L-firefox-bookmarks.html browser/locales/en-US/profile/bookmarks.html
+fi
+
+
+# Change the text in the Firefox menu files (freedesktop and debian) to $FIREFOX_NAME
+sed -i -e "s/Firefox/$FIREFOX_NAME/g" debian/firefox.desktop
+sed -i -e "s/Firefox/$FIREFOX_NAME/g" debian/firefox.menu
+
+# Add in --disable-official-branding by adding it after --disable-updater in rules
+sed -i -e "s/--disable-updater/--disable-updater --disable-official-branding/g" debian/rules
+
+# Make the distro $DISTRONAME, not Ubuntu.
+sed -i -e "s/pref(\"general.useragent.vendor\",\"Ubuntu\");/pref(\"general.useragent.vendor\",\"$DISTRONAME\");/g" debian/rules
+
+# Leaving this nss dir commented out, as i didnt need it until the last few runs. dunno whats with that. (it needs some real \n's)
+# sed -i -e "s/dh_clean/dh_clean\n\nrm -rf nss/* to dh_clean\n\n/g" debian/rules
+
+# Replace copyright block in the browsers Help -> About.
+echo "<!ENTITY aboutDialog.title			\"About &brandFullName;\">" > browser/locales/en-US/chrome/browser/aboutDialog.dtd
+echo "<!ENTITY copyright							\"Credits\">" >> browser/locales/en-US/chrome/browser/aboutDialog.dtd
+echo "<!ENTITY aboutLink							\"&lt; About &brandFullName;\">" >> browser/locales/en-US/chrome/browser/aboutDialog.dtd
+echo "<!ENTITY aboutVersion					\"version\">" >> browser/locales/en-US/chrome/browser/aboutDialog.dtd
+echo "<!ENTITY copyrightText					\"This is $FIREFOX_NAME, Based on the Mozilla codebase and customised for the $DISTRONAME GNU/Linux distribution.\">" >> browser/locales/en-US/chrome/browser/aboutDialog.dtd
+echo "<!ENTITY cmdClose.macKey				\"W\">" >> browser/locales/en-US/chrome/browser/aboutDialog.dtd
+
+# Disable the "you need plugins" popdown when sites want flash etc
+sed -i -e "s/pref(\"plugin.default_plugin_disabled\", true);/pref(\"plugin.default_plugin_disabled\", false);/g" browser/app/profile/firefox.js
+
+# Change the useragent to $FIREFOX_NAME.
+# sed -i -e "s#pref(\"general.useragent.extra.firefox\", \"Firefox/@APP_VERSION@\");#pref(\"general.useragent.extra.firefox\", \"$FIREFOX_NAME/@APP_VERSION@\");#g" browser/app/profile/firefox.js
+
+# Change all Firefox for $FIREFOX_NAME in the error pages file.
+sed -i -e "s/Firefox/$FIREFOX_NAME/g" browser/locales/en-US/chrome/overrides/appstrings.properties
+
+# Next line changes Firefox to $FIREFOX_NAME for Short and Full brandname.
+sed -i -e "s/Firefox/$FIREFOX_NAME/g" browser/locales/en-US/chrome/branding/brand.dtd browser/locales/en-US/chrome/branding/brand.properties
+
+# Vendorname -> $DISTONAME
+sed -i -e "s/Mozilla/$DISTRONAME/g" browser/locales/en-US/chrome/branding/brand.dtd browser/locales/en-US/chrome/branding/brand.properties
+
+# If we get a release URL this can be changed here
+sed -i -e "s#http://www.mozilla.org#http://www.$DOMAIN#g" browser/locales/en-US/chrome/branding/brand.dtd browser/locales/en-US/chrome/branding/brand.properties
+
+# Change links to laucchpad
+sed -i -e "s#https://launchpad.net.*\"#http://www.${DOMAIN}\"#g" browser/base/content/utilityOverlay.js
+
+# Change symlinks in /usr/bin. Can't just remove them due to compatability
+sed -i -e "s#^/usr/lib/firefox/firefox #/usr/bin/$FIREFOX_NAME_L #;" debian/firefox.links
+echo "/usr/lib/firefox/firefox /usr/bin/$FIREFOX_NAME_L" >> debian/firefox.links
+echo "/usr/share/man/man1/firefox.1.gz /usr/share/man/man1/$FIREFOX_NAME_L.1.gz" >> debian/firefox.links
+
+# Remove references to addons.mozilla from extensions dialog box
+sed -i -e "s/ from addons.mozilla.org//" toolkit/locales/en-US/chrome/mozapps/extensions/extensions.dtd
+sed -i -e "s#https://addons.mozilla.org.*#http://www.$DOMAIN/MainRepo/Firefox#" ./toolkit/locales/en-US/chrome/mozapps/extensions/extensions.properties
+
+
+# Needs investigating, its to comment out the "reporter" and "check_for_updates" sections.
+# Is this the menu item, or the overtext? firefox-1.5.dfsg+1.5.0.8/browser/locales/en-US/chrome/help/menu_reference.xhtml
+
+
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${FIREFOX_VERSION}'#p' debian/changelog)  "Changed branding and some supporting resources."
+
+dpkg-buildpackage $DPKGOPTS

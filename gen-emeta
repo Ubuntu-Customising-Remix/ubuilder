@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Brian Brazil
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+# Go through extra meta packages, updating them if nessecary
+
+
+. config
+
+CONFIGS=$PWD/emeta
+rm -rf $WORKINGDIR/emeta
+mkdir -p $WORKINGDIR/emeta
+cd $WORKINGDIR/emeta
+
+for i in $CONFIGS/*; do
+	if [[ ! "$(basename $i)" =~ '^[-a-z]+$' ]]; then continue; fi
+	NAME=$(sed -n "s/^Package: //p" "$i")
+	if [ "$NAME" != "$(basename $i)" ]; then
+		echo "$i has inconsistant file and package names"
+		exit 1
+	fi
+	FILE_VERSION=$(sed -n "s/^Version: //p" "$i")
+	REPO_VERSION=$(reprepro -b $REPODST list $RELEASE $NAME | cut -d ' ' -f 3)
+	if dpkg --compare-versions "$FILE_VERSION" gt "$REPO_VERSION"; then
+		equivs-build "$i"
+		reprepro -Vb $REPODST includedeb $RELEASE "$NAME"*.deb
+	fi
+done

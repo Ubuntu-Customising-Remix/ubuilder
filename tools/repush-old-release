@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+#    Copyright (C) 2009  Karl Goetz
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+# Script to push updates of an old release out.
+# This deliberately does *not* use the standard Builder configuration file.
+# I feel the likelyhood of accidentally blowing away your *current* release
+# makes this unreasonable.
+# It removes debs as part of the transfer - hopefully leaving only source on
+# the public mirrors. If you want packages transferred too, remove
+# "--exclude Packages* --exclude *deb --delete-excluded" from the RSYNCOPTS.
+
+# Enable for verbose run
+# set -ex
+
+# Fields which must appear in the configuration file:
+OLDDISTNAME="deltad"
+OLDDISTARCHES="i386"
+OLDREPOGPGKEY="91854607"
+OLDREPODST="/nfs/.xvda3/gnewsense-sandbox/gnewsense-working-repo-deltad/gnewsense/"
+CURRENTREMOVEPACKAGES="/srv/builder/packages-to-remove"
+OLDRSYNCDST="us.archive.gnewsense.org:/data/pub/gnewsense-deltad"
+RSYNCOPTS="-va --exclude apt --exclude cdimage --exclude cdimage-bak --exclude conf --exclude db --exclude db.bak --exclude lists --exclude Packages* --exclude *deb --delete-excluded"
+
+# Ensure repository is free
+echo -e "\nRemoving all non-free or pointless packages. Excluding \"firefox\", it contains BurningDog.\n"
+for nonfree in `cat $CURRENTREMOVEPACKAGES`;
+do
+if [ "$nonfree" != "firefox" ]
+	then
+		find $OLDREPODST/pool/ -name $nonfree -exec rm -r -v {} +
+	fi
+done
+
+# Regenerate Package lists
+cd $OLDREPODST
+vsag --release $OLDDISTNAME --arches $OLDDISTARCHES --description "Old $OLDDISTNAME releases" --gpg-key $OLDREPOGPGKEY --pkgdir pool/
+
+echo ""
+
+# Push updates to public mirror (Source only)
+rsync $RSYNCOPTS --partial $OLDREPODST/pool $OLDRSYNCDST
+rsync $RSYNCOPTS --partial --delete $OLDREPODST/dists $OLDRSYNCDST
+# Can only delete after dists is updated
+rsync $RSYNCOPTS --delete $OLDREPODST/pool $OLDRSYNCDST
+

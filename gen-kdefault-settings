@@ -1,0 +1,152 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Christian Fernandez
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+. config
+
+IMGDIR=$PWD/images
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source kubuntu-default-settings$VERSION
+apt-get --yes build-dep kubuntu-default-settings$VERSION
+cd kubuntu-default-settings-*
+
+if [ -f $IMGDIR/k${DISTRONAME_L}-usplash.png ]; then
+	cp $IMGDIR/k${DISTRONAME_L}-usplash.png usplash/kusplash.png
+else
+	convert -size 640x400 -depth 8 -colors 16 xc:black -fill $KLOGO_COLOUR -gravity North -draw "text 30,72 '$TAGLINE'" -pointsize 72 -draw "text 0,0 '$DISTRONAME-KDE'" usplash/kusplash.png
+fi
+
+# Dialog
+convert -size 640x170 xc:transparent -font Bookman-DemiItalic -pointsize 72 -draw "text 25,60 '$DISTRONAME-KDE'" -channel RGBA -gaussian 0x6 -fill ${KLOGO_COLOUR}4	-stroke ${KLOGO_COLOUR}1 -draw "text 20,55 '$DISTRONAME-KDE'" artwork/kdm-theme/Dialog.png
+convert -size 640x170 xc:transparent -font Bookman-DemiItalic -pointsize 72 -draw "text 25,60 '$DISTRONAME-KDE'" -channel RGBA -gaussian 0x6 -fill ${KLOGO_COLOUR}4 -stroke ${KLOGO_COLOUR}1 -draw "text 20,55 '$DISTRONAME-KDE'" artwork/ksplash/Dialog.png
+
+if [ -f $IMGDIR/k${DISTRONAME_L}-wallpaper.png ]; then
+	cp $IMGDIR/k${DISTRONAME_L}-wallpaper.png artwork/kubuntu-wallpaper.png
+else
+	convert -size 1280x1024 gradient:${KLOGO_COLOUR}1-white -font Bookman-DemiItalic -fill $KLOGO_COLOUR -gravity North -pointsize 62 -draw "text 0,0 '$TAGLINE'" artwork/kubuntu-wallpaper.png
+fi
+
+# Background I added the choice to add a logo for the distribution if not then a default simple background is made I will have to do something similar to everything
+if [ -f $IMGDIR/k${DISTRONAME_L}-logo.png ]; then
+	convert -size 1280x1024 gradient:${KLOGO_COLOUR}1-white artwork/ksplash/Background-clean.png
+	composite -geometry +565+100 -compose over $IMGDIR/k${DISTRONAME_L}-logo.png artwork/ksplash/Background-clean.png artwork/ksplash/Background.png
+	convert -size 1280x1024 gradient:${KLOGO_COLOUR}1-white -font Bookman-DemiItalic -fill $KLOGO_COLOUR -gravity North -pointsize 62 -draw "text 0,0 '$TAGLINE'" artwork/kdm-theme/kubuntu-wallpaper-clean.png
+	composite -geometry +565+100 -compose over $IMGDIR/k${DISTRONAME_L}-logo.png artwork/kdm-theme/kubuntu-wallpaper-clean.png artwork/kdm-theme/kubuntu-wallpaper.png
+else
+	convert -size 1280x1024 gradient:${KLOGO_COLOUR}1-white -font Bookman-DemiItalic -fill $KLOGO_COLOUR -gravity North -pointsize 62 -draw "text 0,0 '$TAGLINE'" artwork/k$DISTRONAME_L-wallpaper.png
+	convert -size 1280x1024 gradient:${KLOGO_COLOUR}1-white -font Bookman-DemiItalic -fill $KLOGO_COLOUR -gravity North -pointsize 62 -draw "text 0,0 '$TAGLINE'" artwork/kubuntu-wallpaper.png
+	convert -size 1280x1024 gradient:${KLOGO_COLOUR}1-white -font Bookman-DemiItalic -fill $KLOGO_COLOUR -gravity North -pointsize 62 -draw "text 0,0 '$TAGLINE'" artwork/ksplash/Background.png
+	convert -size 1280x1024 gradient:${KLOGO_COLOUR}1-white -font Bookman-DemiItalic -fill $KLOGO_COLOUR -gravity North -pointsize 62 -draw "text 0,0 '$TAGLINE'" artwork/kdm-theme/kubuntu-wallpaper.png
+fi
+
+# MetaBar
+convert -size 500x1001 -depth 8 gradient:${KLOGO_COLOUR}1 -font Bookman-DemiItalic -fill $KLOGO_COLOUR -gravity North -pointsize 25 -draw "text 0,0 '$TAGLINE'" artwork/metabar/background.png
+
+# KDM SPLASH Wallpaper
+cat <<EOF > artwork/${DISTRONAME_L}-kde-wallpaper.png.desktop
+[Wallpaper]
+Encoding=UTF-8
+File=${DISTRONAME_L}-kde-wallpaper.png
+Name=$DISTRONAME-KDE Wallpaper
+ImageType=pixmap
+EOF
+
+# KDM icons
+convert -size 14x14 xc:none -fill ${KLOGO_COLOUR}2 -draw 'Rectangle 0,50 50,0' -bordercolor ${KLOGO_COLOUR} -border 3 -bordercolor ${KLOGO_COLOUR} -border 1 -bordercolor ${KLOGO_COLOUR}2 -border 1  -fill ${KLOGO_COLOUR}2 -draw 'polygon 8,16 8,6 16,11' artwork/kdm-theme/enter_normal.png
+convert -size 14x14 xc:none -fill ${KLOGO_COLOUR}2 -draw 'Rectangle 0,50 50,0' -bordercolor ${KLOGO_COLOUR}2 -border 3 -bordercolor ${KLOGO_COLOUR} -border 1 -bordercolor ${KLOGO_COLOUR}2 -border 1  -fill dark${KLOGO_COLOUR} -draw 'polygon 8,16 8,6 16,11' artwork/kdm-theme/enter_over.png
+convert -size 14x14 xc:none -fill ${KLOGO_COLOUR}2 -draw 'Rectangle 0,50 50,0' -bordercolor ${KLOGO_COLOUR} -border 3 -bordercolor ${KLOGO_COLOUR} -border 1 -bordercolor ${KLOGO_COLOUR}2 -border 1  -fill ${KLOGO_COLOUR}2 -draw 'polygon 8,16 8,6 16,11' artwork/kdm-theme/enter_pressed.png
+
+convert -size 48x14 xc:${KLOGO_COLOUR}2 -depth 8 -bordercolor ${KLOGO_COLOUR} -border 3 -bordercolor ${KLOGO_COLOUR} -border 1 -bordercolor ${KLOGO_COLOUR}2 -border 1 artwork/kdm-theme/system_normal.png
+convert -size 48x14 xc:${KLOGO_COLOUR} -depth 8 -bordercolor ${KLOGO_COLOUR}2 -border 3 -bordercolor ${KLOGO_COLOUR} -border 1 -bordercolor ${KLOGO_COLOUR}2 -border 1 artwork/kdm-theme/system_over.png
+convert -size 48x14 xc:${KLOGO_COLOUR}2 -depth 8 -bordercolor ${KLOGO_COLOUR} -border 3 -bordercolor ${KLOGO_COLOUR} -border 1 -bordercolor ${KLOGO_COLOUR}2 -border 1 artwork/kdm-theme/system_pressed.png
+
+# KDE side bar
+convert -size 22x338 gradient:SlateGray4-white -depth 8 -bordercolor SlateGray4 -border 1 -draw "font-size 16 font Bookman-DemiItalic fill LightSlateGray rotate -90 text -320,16 '${DISTRONAME}-KDE'" artwork/kubuntu-kmenu-side.png
+convert -size 24x1 xc:SlateGray4 -depth 8 artwork/kubuntu-kmenu-side-tile.png
+
+# color-scheme
+if [ -f $IMGDIR/k${DISTRONAME_L}-Colours.kcsrc ]; then
+	/bin/cp $IMGDIR/k${DISTRONAME_L}-Colours.kcsrc \
+		colour-schemes/k{$DISTRONAME_L}Colours.kcsrc
+
+fi
+
+# change resolution on kdmsplash to 1280x1024 instead 1900x1200
+sed -i s/1920,1200/1280,1024/ artwork/ksplash/Theme.rc
+
+# Konqueror and other similar places change Kubuntu Icons for Distro logo letter/s really nice effect on Konqueror :-)
+R=0
+for i in `seq -w 1 74`; 
+	do 
+	convert -size 16x16 xc:transparent -background transparent -fill $KLOGO_COLOUR -gravity Center -pointsize 12 -draw "text 0,-1 'k$LOGO_LETTER'" -rotate "$R" artwork/throbber/16x16/kubuntu-00$i.png
+	convert -size 22x22 xc:transparent -background transparent -fill $KLOGO_COLOUR -gravity Center -pointsize 18 -draw "text 0,-2 'k$LOGO_LETTER'" -rotate "$R" artwork/throbber/22x22/kubuntu-00$i.png
+	convert -size 32x32 xc:transparent -background transparent -fill $KLOGO_COLOUR -gravity Center -pointsize 28 -draw "text 0,-2 'k$LOGO_LETTER'" -rotate "$R" artwork/throbber/32x32/kubuntu-00$i.png
+	convert -size 48x48 xc:transparent -background transparent -fill $KLOGO_COLOUR -gravity Center -pointsize 44 -draw "text 0,-4 'k$LOGO_LETTER'" -rotate "$R" artwork/throbber/48x48/kubuntu-00$i.png
+	let R=R+5
+done
+
+# use the images created above and create the animation
+montage artwork/throbber/16x16/kubuntu-*.png -tile 1x74 -geometry 16x16+1+1 artwork/throbber/16x16/kde.png
+montage artwork/throbber/22x22/kubuntu-*.png -tile 1x74 -geometry 22x22+1+1 artwork/throbber/22x22/kde.png
+montage artwork/throbber/32x32/kubuntu-*.png -tile 1x74 -geometry 32x32+1+1 artwork/throbber/32x32/kde.png
+montage artwork/throbber/48x48/kubuntu-*.png -tile 1x74 -geometry 48x48+1+1 artwork/throbber/48x48/kde.png
+
+# here we change the name of files so it shows up as the distroname not kubuntu.
+for file in $(find . -name "*kubuntu*"); do
+	mv "$file" "${file/kubuntu/k${DISTRONAME_L}}" 
+done
+
+### this are necessary changes ######
+sed -i "s/kubuntu-/${DISTRONAME_L}-kde-/g" debian/rules
+sed -i -e "s/Kubuntu/$DISTRONAME-KDE/g;
+		s/kubuntu/${DISTRONAME_L}-kde/g" debian/control
+sed -i "s/kubuntu/${DISTRONAME_L}-kde/g" debian/${DISTRONAME_L}--kdedefault-settings.*
+sed -i -e "s/1920/100%/;
+		s/1200/100%/" artwork/kdm-theme/${DISTRONAME_L}-kde.xml
+sed -i "s/700/600/g" artwork/ksplash/Theme.rc
+
+## this is to change the theme to be show in desktop to the user as distroname instead of kubuntu
+find -type f -not -regex '(png|3ds|cursors|ogg|svg|[0-9][a-z]+' -print0 | xargs -0	sed -i s/kubuntu/${DISTRONAME_L}-kde/g
+find -type f -not -regex '(png|3ds|cursors|ogg|svg|[0-9][a-z]+' -print0 | xargs -0	sed -i s/Kubuntu/${DISTRONAME}-KDE/g
+
+## some I miss with the line above... sorry I will fix all this hacks :-)
+sed -i s/Kubuntu/k${DISTRONAME}-KDE/g cursors/index.theme
+sed -i s/kubuntu/k${DISTRONAME_L}-kde/g cursors/default/index.theme
+sed -i s/kubuntu/k${DISTRONAME_L}-kde/g debian/${DISTRONAME_L}-kde-*
+sed -i s/Kubuntu/k${DISTRONAME}-KDE/g debian/${DISTRONAME_L}-kde-*
+sed -i s/kubuntu/k${DISTRONAME_L}-kde/g artwork/${DISTRONAME_L}-kde-wallpaper.png.desktop
+sed -i s/Kubuntu/k${DISTRONAME}-KDE/g artwork/${DISTRONAME_L}-kde-wallpaper.png.desktop
+sed -i s/Kubuntu/k${DISTRONAME}-KDE/g konqueror-profile/${DISTRONAME_L}-kde-*
+sed -i s/Kubuntu/k${DISTRONAME}-KDE/g konqueror-profile/profiles/*
+
+# here we modifify one line in Makefile to keep kdmrc from complaining about it can't find kubuntu theme...
+sed -i "s#/kdm/themes/${DISTRONAME_L}-kde#/kdm/themes/kubuntu#" Makefile
+sed -i "s#/kdm/themes/${DISTRONAME_L}-kde#/kdm/themes/kubuntu#" debian/${DISTRONAME_L}-kde-default-settings.postinst
+
+if [ -f $IMGDIR/k${DISTRONAME_L}-kdeglobals ]; then
+	/bin/cp $IMGDIR/k${DISTRONAME_L}-kdeglobals \
+		kde-rc-files/kdeglobals
+fi
+
+echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${KDEFAULT_SETTINGS_VERSION}'#p' debian/changelog)  "Munged to show k${DISTRONAME} graphics"
+sed -i "1s/^kubuntu-/${DISTRONAME_L}-kde-/" debian/changelog
+
+dpkg-buildpackage $DPKGOPTS

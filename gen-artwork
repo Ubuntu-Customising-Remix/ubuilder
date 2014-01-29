@@ -1,0 +1,56 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Brian Brazil
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+IMGDIR=$PWD/images
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source ubuntu-artwork$VERSION
+apt-get --yes build-dep ubuntu-artwork$VERSION
+cd ubuntu-artwork-*
+
+# Icons
+if [ -f $IMGDIR/$DISTRONAME_L-icon-48x48.png ]; then
+	cp $IMGDIR/$DISTRONAME_L-icon-48x48.png distributor-logo.png
+else
+	convert -size 48x48 xc:transparent -fill $LOGO_COLOUR -gravity Center -pointsize 44 -draw "text 0,-4 '$LOGO_LETTER'" distributor-logo.png
+fi
+
+sed -i "/gtk_theme/s/Human/${DISTRONAME}-Murrine/" debian/gconf-defaults
+sed -i -e "s#Section: non-free/x11#x11#g" debian/control
+# Easiest place to set this
+echo '/desktop/gnome/url-handlers/http/command gnome-www-browser "%s"' >> debian/gconf-defaults
+echo '/desktop/gnome/url-handlers/https/command gnome-www-browser "%s"' >> debian/gconf-defaults
+
+sed -i "s/ubuntu-artwork/${DISTRONAME_L}-artwork/" debian/rules
+sed -i "s/human-theme[^,]*/${DISTRONAME_L}-theme/" debian/control
+
+echo | dch -D $RELEASE -v $(sed -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${ARTWORK_VERSION}'#p' debian/changelog)  "Munged to show $DISTRONAME graphics"
+sed -i "1s/^ubuntu-artwork/${DISTRONAME_L}-artwork/" debian/changelog
+sed -i "s/ubuntu-artwork/${DISTRONAME_L}-artwork/;
+	s/Ubuntu/$DISTRONAME/;
+	s/ubuntu-gdm-themes/${DISTRONAME_L}-gdm-themes/;
+	s/ubuntu-wallpapers/${DISTRONAME_L}-wallpapers/;
+	s/^\\(Package: ${DISTRONAME_L}-artwork.*\\)/\1\\nConflicts: ubuntu-artwork/;" debian/control
+
+dpkg-buildpackage $DPKGOPTS

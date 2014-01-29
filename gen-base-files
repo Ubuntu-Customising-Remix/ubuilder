@@ -1,0 +1,76 @@
+#!/bin/bash
+#
+#    Copyright (C) 2006  Brian Brazil
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+
+. config
+
+IMGDIR=$PWD/images/
+
+rm -rf $WORKINGDIR
+mkdir -p $WORKINGDIR
+cd $WORKINGDIR
+
+apt-get source base-files$VERSION
+apt-get --yes build-dep base-files$VERSION
+cd base-files-*
+
+cat > etc/motd <<EOF
+
+
+The programs included with the $DISTRONAME system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+$DISTRONAME comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+applicable law.
+EOF
+
+cat > etc/issue <<EOF
+$DISTRONAME $BASE_RELEASE \n \l
+
+EOF
+
+cat > etc/issue.net <<EOF
+$DISTRONAME $BASE_RELEASE
+EOF
+
+cat > etc/lsb-release <<EOF
+DISTRIB_ID=$DISTRONAME
+DISTRIB_RELEASE=$LIVECD_VERSION
+DISTRIB_CODENAME=$BASE_RELEASE
+DISTRIB_DESCRIPTION="$DISTRONAME GNU/Linux $LIVECD_VERSION ($BASE_RELEASE)"
+EOF
+
+# Fix expired GPG key issue (ref http://lists.nongnu.org/archive/html/gnewsense-users/2012-12/msg00045.html )
+cp $IMGDIR/updated-gns-build-key2.gpg share/
+if [ `grep -c updated-gns-build-key2.gpg debian/postinst` -eq 0 ]; then
+	echo -e "\napt-key add /usr/share/base-files/updated-gns-build-key2.gpg || true\n" >> debian/postinst
+fi
+
+# Fix changed icecat GPG key issue (ref http://lists.gnu.org/archive/html/gnewsense-users/2009-11/msg00088.html )
+cp $IMGDIR/icecat-on-launchpad.gpg share/
+if [ `grep -c "base-files/icecat-on-launchpad.gpg" debian/postinst` -eq 0 ]; then
+	echo -e "\napt-key add /usr/share/base-files/icecat-on-launchpad.gpg || true\n" >> debian/postinst
+# Remove python-apt reference (First release of this patch was broken)
+	sed -i -e 'd/python-apt/' debian/postinst || true
+fi
+
+echo | dch -D $RELEASE -v $(sed -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${BASE_FILES_VERSION}'#p' debian/changelog)  "Update archive signing key."
+
+dpkg-buildpackage $DPKGOPTS
