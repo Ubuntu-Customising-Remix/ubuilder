@@ -46,32 +46,32 @@ fi
 
 if [ -f $IMGDIR/k$DISTRONAME_L-icon-16x16.png ]; then
 
-	cp $IMGDIR/k${DISTRONAME_L}-icon-16x16.png desktop/cr16-app-ubiquity.png
-	cp $IMGDIR/k${DISTRONAME_L}-icon-22x22.png desktop/cr22-app-ubiquity.png
-	cp $IMGDIR/k${DISTRONAME_L}-icon-32x32.png desktop/cr32-app-ubiquity.png
-	cp $IMGDIR/k${DISTRONAME_L}-icon-48x48.png desktop/cr48-app-ubiquity.png
-	cp $IMGDIR/k${DISTRONAME_L}-icon-64x64.png desktop/cr64-app-ubiquity.png
-	cp $IMGDIR/k${DISTRONAME_L}-icon-128x128.png desktop/cr128-app-ubiquity.png
+	cp $IMGDIR/k${DISTRONAME_L}-icon-16x16.png data/cr16-app-ubiquity.png
+	cp $IMGDIR/k${DISTRONAME_L}-icon-22x22.png data/cr22-app-ubiquity.png
+	cp $IMGDIR/k${DISTRONAME_L}-icon-32x32.png data/cr32-app-ubiquity.png
+	cp $IMGDIR/k${DISTRONAME_L}-icon-48x48.png data/cr48-app-ubiquity.png
+	cp $IMGDIR/k${DISTRONAME_L}-icon-64x64.png data/cr64-app-ubiquity.png
+	cp $IMGDIR/k${DISTRONAME_L}-icon-128x128.png data/cr128-app-ubiquity.png
 
 else
 	convert -size 16x16 xc:transparent -fill $KLOGO_COLOUR -gravity NorthWest \
 		-pointsize 24 -draw "text 6,-4 '$LOGO_LETTER'"  \
-		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/cr16-app-ubiquity.png
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  data/cr16-app-ubiquity.png
 	convert -size 22x22 xc:transparent -fill $KLOGO_COLOUR -gravity NorthWest \
 		-pointsize 24 -draw "text 6,-4 '$LOGO_LETTER'"  \
-		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/cr22-app-ubiquity.png
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  data/cr22-app-ubiquity.png
 	convert -size 32x32 xc:transparent -fill $KLOGO_COLOUR -gravity NorthWest \
 		-pointsize 24 -draw "text 6,-4 '$LOGO_LETTER'"  \
-		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/cr32-app-ubiquity.png
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  data/cr32-app-ubiquity.png
 	convert -size 48x48 xc:transparent -fill $KLOGO_COLOUR -gravity NorthWest \
 		-pointsize 24 -draw "text 6,-4 '$LOGO_LETTER'"  \
-		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/cr48-app-ubiquity.png
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  data/cr48-app-ubiquity.png
 	convert -size 64x64 xc:transparent -fill $KLOGO_COLOUR -gravity NorthWest \
 		-pointsize 24 -draw "text 6,-4 '$LOGO_LETTER'"  \
-		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/cr64-app-ubiquity.png
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  data/cr64-app-ubiquity.png
 	convert -size 128x128 xc:transparent -fill $KLOGO_COLOUR -gravity NorthWest \
 		-pointsize 24 -draw "text 6,-4 '$LOGO_LETTER'"  \
-		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/cr128-app-ubiquity.png
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  data/cr128-app-ubiquity.png
 	
 fi
 
