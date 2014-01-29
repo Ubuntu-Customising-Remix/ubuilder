@@ -17,6 +17,9 @@
 #    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 #
 
+# --------------------------------
+# NOTE: we may not need to do this
+# --------------------------------
 
 . config
 
@@ -30,7 +33,7 @@ apt-get --yes install freeglut3-dev libjpeg62-dev libpng12-dev libsdl1.2-dev
 apt-get --yes build-dep blender$VERSION
 cd blender-*
 
-rm -r release/windows/{,publ_}installer
+# rm -r release/windows/{,publ_}installer
 
 echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${BLENDER_VERSION}'#p' debian/changelog) "Removed bogus copyright files."
 

@@ -333,28 +333,28 @@ while [ $REDO -eq 1 ]; do	# If versions in the config change, we could need to r
 		# General
 		# ensure_updated srcname gnssrcname 
 		ensure_updated apt apt $RELEASE$distro_release ./gen-apt $APT_VERSION
-		ensure_updated audacity audacity $RELEASE$distro_release ./gen-audacity $AUDACITY_VERSION
-		ensure_updated blender blender $RELEASE$distro_release ./gen-blender $BLENDER_VERSION
-		ensure_updated bogofilter bogofilter $RELEASE$distro_release ./gen-bogofilter $BOGOFILTER_VERSION
-		ensure_updated cia-clients cia-clients $RELEASE$distro_release ./gen-cia-clients $CIA_SCRIPTS_VERSION
+#		ensure_updated audacity audacity $RELEASE$distro_release ./gen-audacity $AUDACITY_VERSION
+#		ensure_updated blender blender $RELEASE$distro_release ./gen-blender $BLENDER_VERSION
+#		ensure_updated bogofilter bogofilter $RELEASE$distro_release ./gen-bogofilter $BOGOFILTER_VERSION
+#		ensure_updated cia-clients cia-clients $RELEASE$distro_release ./gen-cia-clients $CIA_SCRIPTS_VERSION
 		ensure_updated base-files base-files $RELEASE$distro_release ./gen-base-files $BASE_FILES_VERSION
-		ensure_updated example-content example-content $RELEASE$distro_release ./gen-example-content $EXAMPLE_CONTENT_VERSION
-		ensure_updated launchpad-integration launchpad-integration $RELEASE$distro_release ./gen-launchpad-integration $LAUNCHPAD_INTEGRATION_VERSION
-		ensure_updated liferea liferea $RELEASE$distro_release ./gen-liferea $LIFEREA_VERSION
-		ensure_updated linux linux $RELEASE$distro_release ./gen-linux $KERNEL_VERSION
-		ensure_updated linux-ubuntu-modules-$KERNEL_RELEASE linux-ubuntu-modules-$KERNEL_RELEASE $RELEASE$distro_release ./gen-linux-ubuntu-modules $LINUX_UBUNTU_MODULES_VERSION
+#		ensure_updated example-content example-content $RELEASE$distro_release ./gen-example-content $EXAMPLE_CONTENT_VERSION
+#		ensure_updated launchpad-integration launchpad-integration $RELEASE$distro_release ./gen-launchpad-integration $LAUNCHPAD_INTEGRATION_VERSION
+#		ensure_updated liferea liferea $RELEASE$distro_release ./gen-liferea $LIFEREA_VERSION
+#		ensure_updated linux linux $RELEASE$distro_release ./gen-linux $KERNEL_VERSION
+#		ensure_updated linux-ubuntu-modules-$KERNEL_RELEASE linux-ubuntu-modules-$KERNEL_RELEASE $RELEASE$distro_release ./gen-linux-ubuntu-modules $LINUX_UBUNTU_MODULES_VERSION
 		ensure_updated mesa mesa $RELEASE$distro_release ./gen-mesa $MESA_VERSION
-		ensure_updated module-init-tools module-init-tools $RELEASE$distro_release ./gen-module-init-tools $MODULE_INIT_TOOLS_VERSION
-		ensure_updated psutils psutils $RELEASE$distro_release ./gen-psutils $PSUTILS_VERSION
+#		ensure_updated module-init-tools module-init-tools $RELEASE$distro_release ./gen-module-init-tools $MODULE_INIT_TOOLS_VERSION
+#		ensure_updated psutils psutils $RELEASE$distro_release ./gen-psutils $PSUTILS_VERSION
 		ensure_updated python-apt python-apt $RELEASE$distro_release ./gen-python-apt $PYTHON_APT_VERSION
 		ensure_updated seamonkey seamonkey $RELEASE$distro_release ./gen-seamonkey $SEAMONKEY_VERSION
-		ensure_updated texlive-base texlive-base $RELEASE$distro_release ./gen-texlive-base $TEXLIVE_BASE_VERSION
-		ensure_updated texlive-bin texlive-bin $RELEASE$distro_release ./gen-texlive-bin $TEXLIVE_BASE_VERSION
-		ensure_updated texlive-extra texlive-extra $RELEASE$distro_release ./gen-texlive-extra $TEXLIVE_EXTRA_VERSION
+#		ensure_updated texlive-base texlive-base $RELEASE$distro_release ./gen-texlive-base $TEXLIVE_BASE_VERSION
+#		ensure_updated texlive-bin texlive-bin $RELEASE$distro_release ./gen-texlive-bin $TEXLIVE_BASE_VERSION
+#		ensure_updated texlive-extra texlive-extra $RELEASE$distro_release ./gen-texlive-extra $TEXLIVE_EXTRA_VERSION
 		ensure_updated thunderbird thunderbird $RELEASE$distro_release ./gen-thunderbird $THUNDERBIRD_VERSION
 		ensure_updated ubiquity ubiquity $RELEASE$distro_release ./gen-ubiquity $UBIQUITY_VERSION
-		ensure_updated vlc vlc $RELEASE$distro_release ./gen-vlc $VLC_VERSION
-		ensure_updated xchat xchat $RELEASE$distro_release ./gen-xchat $XCHAT_VERSION
+#		ensure_updated vlc vlc $RELEASE$distro_release ./gen-vlc $VLC_VERSION
+#		ensure_updated xchat xchat $RELEASE$distro_release ./gen-xchat $XCHAT_VERSION
 
 		# Gnome
 		ensure_updated app-install-data-ubuntu app-install-data-ubuntu $RELEASE$distro_release ./gen-app-install-data-ubuntu $APP_INSTALL_DATA_UBUNTU_VERSION
