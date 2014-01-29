@@ -40,8 +40,8 @@ s/changelog
 
 Suite: $BASE_RELEASE
 RepositoryType: deb
-BaseURI: http://archive.$DOMAIN/$DISTRONAME_L/
-MatchURI: archive.$DOMAIN/$DISTRONAME_L
+BaseURI: http://repo.$DOMAIN/$DISTRONAME_L/
+MatchURI: repo.$DOMAIN/$DISTRONAME_L
 MirrorsFile: /usr/share/python-apt/templates/$DISTRONAME.mirrors
 _Description: $DISTRONAME "$BASE_RELEASE"
 Component: main
@@ -55,7 +55,7 @@ Suite: $BASE_RELEASE-security
 ParentSuite: $BASE_RELEASE
 RepositoryType: deb
 BaseURI: http://security.$DOMAIN/$DISTRONAME_L/
-MatchURI: archive.$DOMAIN/$DISTRONAME_L|security.$DOMAIN
+MatchURI: repo.$DOMAIN/$DISTRONAME_L|security.$DOMAIN
 _Description: Important security updates
 
 EOF
@@ -65,8 +65,8 @@ if [ "$UPDATES" = 1 ]; then
 Suite: $BASE_RELEASE-updates
 ParentSuite: $BASE_RELEASE
 RepositoryType: deb
-BaseURI: http://archive.$DOMAIN/$DISTRONAME_L/
-MatchURI: archive.$DOMAIN/$DISTRONAME_L
+BaseURI: http://repo.$DOMAIN/$DISTRONAME_L/
+MatchURI: repo.$DOMAIN/$DISTRONAME_L
 _Description: Unsupported updates
 
 EOF
@@ -77,8 +77,8 @@ if [ "$BACKPORTS" = 1 ]; then
 Suite: $BASE_RELEASE-backports
 ParentSuite: $BASE_RELEASE
 RepositoryType: deb
-BaseURI: http://archive.$DOMAIN/$DISTRONAME_L/
-MatchURI: archive.$DOMAIN/$DISTRONAME_L
+BaseURI: http://repo.$DOMAIN/$DISTRONAME_L/
+MatchURI: repo.$DOMAIN/$DISTRONAME_L
 _Description: Package Backports
 
 EOF
@@ -91,7 +91,7 @@ fi
 echo > data/templates/$DISTRONAME.mirrors
 for c in $(awk '{print $1}' /usr/share/iso-codes/iso_3166.tab); do
 	echo "#LOC:$c" >> data/templates/$DISTRONAME.mirrors
-	echo "http://$(tr A-Z a-z <<<$c).archive.$DOMAIN/$DISTRONAME_L/" >> data/templates/$DISTRONAME.mirrors
+	echo "http://$(tr A-Z a-z <<<$c).repo.$DOMAIN/$DISTRONAME_L/" >> data/templates/$DISTRONAME.mirrors
 done
 
 echo | dch -D $RELEASE -v $(sed  -n '1s#^.*(\(.*\)).*#\1'${DISTRONAME_L}${PYTHON_APT_VERSION}'#p' debian/changelog) "Changed for $DISTRONAME"
