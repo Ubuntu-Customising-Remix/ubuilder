@@ -53,13 +53,13 @@ echo -e "$MIRRORDIST-CHROOT$VARIANT-$GNS_HOST_ARCH" > $DIR/etc/debian_chroot
 # Copy primary systems hosts file into chroot
 cp /etc/hosts $DIR/etc/hosts
 
-# Copy of builder for use in chroot.
+# Copy of ubuilder for use in chroot.
 # Copy with hardlinking when chroot is on same filesystem.
 if [ "$(stat --format=%d .)" = "$(stat --format=%d $DIR)" ] ; then
-	cp -afl . "$DIR"/builder || true
+	cp -afl . "$DIR"/ubuilder || true
 fi
 # Always rsync to either delete old stuff or copy across filesystems.
-rsync -ra --delete . $DIR/builder
+rsync -ra --delete . $DIR/ubuilder
 
 if ! mountpoint $DIR/proc; then
 	mount proc -t proc $DIR/proc
@@ -67,4 +67,4 @@ fi
 
 chroot $DIR bash -c "set -ex; DEBIAN_PRIORITY=critical apt-get -y update && apt-get -y dist-upgrade && 
 apt-get -y install build-essential kernel-wedge imagemagick netpbm fakeroot sharutils devscripts unifdef equivs $CHROOT_EXTRA_PACKAGES && 
-/builder/fixup-kernel-wedge"
+/ubuilder/fixup-kernel-wedge"

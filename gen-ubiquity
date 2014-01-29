@@ -86,7 +86,7 @@ fi
 
 sed -i "s/^MASTERLIST=.*/MASTERLIST=Mirrors.masterlist.$DISTRONAME_L/" d-i/source/choose-mirror/Makefile
 cat <<EOF > d-i/source/choose-mirror/Mirrors.masterlist.$DISTRONAME_L
-Site: \${CC}.archive.$DOMAIN
+Site: \${CC}.repo.$DOMAIN
 Type: Push-Secondary
 Archive-http: /$DISTRONAME_L/
 Archive-architecture: $GNS_HOST_ARCH
@@ -128,10 +128,10 @@ if [ "\$protocol" = http ]; then
 	fi
 fi
 
-dists="main universe"
+dists="$COMPONENTS"
 
 # Use similar naming scheme for security
-sec_host=\${hostname/archive/security}
+sec_host=\${hostname/repo/security}
 
 cat > \$file <<EOF
 deb \$protocol://\$hostname\$directory \$codename \$dists

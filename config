@@ -121,6 +121,7 @@ USECCACHE=0
 # Version numbers to be appended to generated .debs 
 # Mostly used during development (Increment these versions when making a change to the package)
 APT_VERSION=1
+BUILDER_VERSION=1
 UBIQUITY_VERSION=1
 BASE_FILES_VERSION=1
 UPDATE_MANAGER_VERSION=1

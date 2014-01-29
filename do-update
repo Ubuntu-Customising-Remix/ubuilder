@@ -268,7 +268,7 @@ add_package() {
 			# Some things need to manipulate the repo itself
 			CHROOTDIR=$CHROOTDIR RELEASE=$4 VERSION="=$3" $5 || exit 1
 		else
-			chroot $CHROOTDIR bash -c "cd /builder && RELEASE=$4 VERSION='=$3' $CCACHE_PREFS $5" || exit 1
+			chroot $CHROOTDIR bash -c "cd /ubuilder && RELEASE=$4 VERSION='=$3' $CCACHE_PREFS $5" || exit 1
 			reprepro --ignore=missingfile -Vb $REPODST include $4 $CHROOTDIR/$WORKINGDIR/*.changes
 		fi
 	fi
@@ -333,6 +333,7 @@ while [ $REDO -eq 1 ]; do	# If versions in the config change, we could need to r
 		# General
 		# ensure_updated srcname gnssrcname 
 		ensure_updated apt apt $RELEASE$distro_release ./gen-apt $APT_VERSION
+		ensure_updated ubuilder ubuilder $RELEASE$distro_release ./gen-builder $BUILDER_VERSION
 #		ensure_updated audacity audacity $RELEASE$distro_release ./gen-audacity $AUDACITY_VERSION
 #		ensure_updated blender blender $RELEASE$distro_release ./gen-blender $BLENDER_VERSION
 #		ensure_updated bogofilter bogofilter $RELEASE$distro_release ./gen-bogofilter $BOGOFILTER_VERSION
@@ -347,17 +348,17 @@ while [ $REDO -eq 1 ]; do	# If versions in the config change, we could need to r
 #		ensure_updated module-init-tools module-init-tools $RELEASE$distro_release ./gen-module-init-tools $MODULE_INIT_TOOLS_VERSION
 #		ensure_updated psutils psutils $RELEASE$distro_release ./gen-psutils $PSUTILS_VERSION
 		ensure_updated python-apt python-apt $RELEASE$distro_release ./gen-python-apt $PYTHON_APT_VERSION
-		ensure_updated seamonkey seamonkey $RELEASE$distro_release ./gen-seamonkey $SEAMONKEY_VERSION
+#		ensure_updated seamonkey seamonkey $RELEASE$distro_release ./gen-seamonkey $SEAMONKEY_VERSION
 #		ensure_updated texlive-base texlive-base $RELEASE$distro_release ./gen-texlive-base $TEXLIVE_BASE_VERSION
 #		ensure_updated texlive-bin texlive-bin $RELEASE$distro_release ./gen-texlive-bin $TEXLIVE_BASE_VERSION
 #		ensure_updated texlive-extra texlive-extra $RELEASE$distro_release ./gen-texlive-extra $TEXLIVE_EXTRA_VERSION
-		ensure_updated thunderbird thunderbird $RELEASE$distro_release ./gen-thunderbird $THUNDERBIRD_VERSION
+#		ensure_updated thunderbird thunderbird $RELEASE$distro_release ./gen-thunderbird $THUNDERBIRD_VERSION
 		ensure_updated ubiquity ubiquity $RELEASE$distro_release ./gen-ubiquity $UBIQUITY_VERSION
 #		ensure_updated vlc vlc $RELEASE$distro_release ./gen-vlc $VLC_VERSION
 #		ensure_updated xchat xchat $RELEASE$distro_release ./gen-xchat $XCHAT_VERSION
 
 		# Gnome
-		ensure_updated app-install-data-ubuntu app-install-data-ubuntu $RELEASE$distro_release ./gen-app-install-data-ubuntu $APP_INSTALL_DATA_UBUNTU_VERSION
+#		ensure_updated app-install-data-ubuntu app-install-data-ubuntu $RELEASE$distro_release ./gen-app-install-data-ubuntu $APP_INSTALL_DATA_UBUNTU_VERSION
 		ensure_updated epiphany-browser epiphany-browser $RELEASE$distro_release ./gen-epiphany-browser $EPIPHANY_BROWSER_VERSION
 		ensure_updated gnome-desktop gnome-desktop $RELEASE$distro_release ./gen-gnome-desktop $GNOME_DESKTOP_VERSION
 		ensure_updated gnome-icon-theme gnome-icon-theme $RELEASE$distro_release ./gen-gnome-icon-theme $GNOME_ICON_THEME_VERSION
