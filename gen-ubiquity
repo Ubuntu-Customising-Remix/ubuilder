@@ -35,11 +35,11 @@ cd ubiquity-*
 if [ -f $IMGDIR/$DISTRONAME_L-icon-24x24.png ]; then
 	convert -size 48x48 xc:transparent \
 		-tile $IMGDIR/$DISTRONAME_L-icon-24x24.png -draw "rectangle 4,4 20,20"  \
-		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/ubiquity.png
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  data/ubiquity.png
 else
 	convert -size 48x48 xc:transparent -fill $LOGO_COLOUR -gravity NorthWest \
 		-pointsize 24 -draw "text 6,-4 '$LOGO_LETTER'"  \
-		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  desktop/ubiquity.png
+		-tile $IMGDIR/ubiquity.png -draw "rectangle 0,0 48,48"  data/ubiquity.png
 fi
 
 
