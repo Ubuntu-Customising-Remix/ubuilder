@@ -24,10 +24,10 @@
 
 
 date '+%s%n%c' > $REPODST/dists/.last_push_repo
-date '+%s%n%c' > $REPODST/cdimage/.last_push_repo
+#date '+%s%n%c' > $REPODST/cdimage/.last_push_repo
 rsync -va $RSYNC_OPTIONS $REPODST/pool $RSYNC_DEST/$DISTRONAME_L/
 rsync -va $RSYNC_OPTIONS --delete $REPODST/dists $RSYNC_DEST/$DISTRONAME_L/
 # Can only delete after dists is updated
 rsync -va --delete --delete-excluded $RSYNC_OPTIONS $REPODST/pool $RSYNC_DEST/$DISTRONAME_L/
-rsync -va $RSYNC_OPTIONS $REPODST/cdimage/.last_push_repo $RSYNC_DEST/cdimage/.last_push_repo
+#rsync -va $RSYNC_OPTIONS $REPODST/cdimage/.last_push_repo $RSYNC_DEST/cdimage/.last_push_repo
 
